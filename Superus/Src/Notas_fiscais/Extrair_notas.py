@@ -30,8 +30,22 @@ def interagir_com_interface_superus(nome_do_arquivo):
     pg.click(335, 880, duration=0.5)
     
     while True:
+        pg.locateOnScreen(r"Imgs\meu computador.png"); sleep(3)
+        break
+    
+    pg.click(365, 472, duration=0.5)
+    
+    while True:
+        pg.locateOnScreen(r"Imgs\downloads.png"); sleep(3)
+        break
+    
+    pg.doubleClick(502,356, duration=0.5, interval=0.5)
+    
+    while True:
         if pg.locateOnScreen(r"Imgs\salvar.png", confidence=0.9) is not None:
             break
+        
+    pg.press("tab", presses=2, interval=1)
     
     pg.write(nome_do_arquivo); pg.press("enter")
 
