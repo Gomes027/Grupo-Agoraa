@@ -23,9 +23,6 @@ def processar_imagens(pasta):
         sleep(3)
         pg.press("right")
         sleep(2)
-
-        # Realiza alguma ação com o nome
-        print(f"Processando imagem: {nome_sem_extensao}")
     
     keyboard.wait("enter")
 

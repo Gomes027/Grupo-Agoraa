@@ -65,6 +65,7 @@ if __name__ == "__main__":
             os.remove(arquivo_completo)
         
         arquivos_existentes = arquivos
+        23.300
         
         # Executa a extração de histórico de pedidos ou notas fiscais quando não houver arquivos novos
         if not novos_arquivos:

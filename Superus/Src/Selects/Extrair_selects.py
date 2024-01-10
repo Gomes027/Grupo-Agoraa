@@ -1,6 +1,7 @@
 import os
 import sys
 import shutil
+import subprocess
 import pyautogui as pg
 from time import sleep
 
@@ -8,6 +9,24 @@ from time import sleep
 pg.FAILSAFE = False
 
 # Funções Auxiliares
+def iniciar_superus():
+    # Caminho para o aplicativo
+    caminho_exe = r"C:\SUPERUS VIX\Superus.exe"
+    subprocess.Popen([caminho_exe])
+
+    while True:
+        if pg.locateOnScreen(r"Imgs\superus.png", confidence=0.9) is not None:
+            break
+        sleep(1)
+
+    pg.write("123456"); sleep(3)
+    pg.press("enter", presses=2, interval= 1)
+
+    while True:
+        if pg.locateOnScreen(r"Imgs\superus_aberto.png", confidence=0.9) is not None:
+            break
+        sleep(1)
+
 def interagir_com_interface_superus(select, data_inicial, data_final, nome_do_arquivo):
     # Abre a execução de selects
     pg.click(270,31, duration=0.5); sleep(1)
@@ -75,7 +94,7 @@ def aguardar_e_mover_download(arquivo_download, pasta_destino, nome_do_arquivo):
 # Função para Extração dos dados
 def extrair_dados(tipo_de_select, data_inicio, data_fim, nome_do_arquivo):
     dir_arquivo = os.path.join(r"C:\Users\automacao.compras\Downloads", nome_do_arquivo)
-    
+
     print(f"Extraindo dados para o select {tipo_de_select}...")
     interagir_com_interface_superus(tipo_de_select, data_inicio, data_fim, nome_do_arquivo)
     aguardar_e_mover_download(dir_arquivo, r"F:\BI\Bases", nome_do_arquivo)
@@ -86,11 +105,13 @@ def executar_selects():
 
     # Dados para extração
     dados_para_extracao = [
-        ("1350", "01012022", "31122023", "historico_de_recebimento.xlsx"),
-        ("1610", "01012022", "31122023", "historico_inventario.xlsx"),
+        ("1350", "01012022", "31122024", "historico_de_recebimento.xlsx"),
+        ("1610", "01012022", "31122024", "historico_inventario.xlsx"),
         ("1590", None, None, "relatorio_vendas.xlsx"),
         ("1570", None, None, "relatorio_precos_4_lojas.xlsx")
     ]
+
+    iniciar_superus()
 
     # Executar Extração para cada conjunto de dados
     for select, data_inicio, data_fim, nome_arquivo in dados_para_extracao:
@@ -98,5 +119,4 @@ def executar_selects():
         sleep(5)
         
 if __name__ == "__main__":
-    pg.hotkey("win", "3")
     executar_selects()

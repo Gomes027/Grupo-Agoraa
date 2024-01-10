@@ -26,7 +26,7 @@ def abrir_janela(nome_da_janela):
 def procurar_botão(imagem, clicar):
     start_time = time.time()
     while True:
-        localizacao = pg.locateOnScreen(imagem)
+        localizacao = pg.locateOnScreen(imagem, confidence=0.9)
 
         if localizacao is not None:
             if clicar == "sim":
@@ -70,16 +70,20 @@ def procesar_pdfs(pasta):
 
         procurar_botão(r"Imgs\pesquisar.png", "sim"); sleep(1)
         
+        procurar_botão(r"Imgs\procurar_pedido.png", "não"); sleep(1)
+
         # Escreve o nome do arquivo
         keyboard.write(fornecedor); sleep(5)
-        pg.press("enter"); sleep(3)
+        pg.press("enter"); sleep(6)
         
         # Seleciona a imagem
         pg.doubleClick(1063, 521, duration=0.5); sleep(1)
 
         # Abre o menu de enviar documentos
         procurar_botão(r"Imgs\+.png", "sim"); sleep(1)
-        procurar_botão(r"Imgs\documento.png", "sim"); sleep(1)
+        procurar_botão(r"Imgs\documento.png", "não"); sleep(1)
+        pg.press("up", presses=6, interval=0.5); sleep(1)
+        pg.press("enter")
         procurar_botão(r"Imgs\enviar_pdf.png", "não"); sleep(1)
 
         # Seleciona a pasta dos pdfs apenas na primeira iteração
@@ -91,7 +95,8 @@ def procesar_pdfs(pasta):
             primeira_iteracao = False
         
         keyboard.write(nome_sem_extensao); sleep(1)
-        pg.press("enter", presses=2, interval=3); sleep(3)
+        pg.press("enter")
+        procurar_botão(r"Imgs\enviar.png", "sim"); sleep(5)
         
         # Realiza alguma ação com o nome
         print(f"PDF Enviado: {nome_sem_extensao}")

@@ -53,7 +53,7 @@ def aguardar_e_mover_download(arquivo_download, pasta_destino_1, pasta_destino_2
 
         print("Extraido com Sucesso!"); print("\n")
 
-    pg.press("f9")
+    pg.press("f9", presses=2, interval=2)
 
 def extrair_historico_pedidos():
     """ Função principal para extrair o histórico de pedidos. """

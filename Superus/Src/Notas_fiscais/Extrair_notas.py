@@ -39,7 +39,7 @@ def interagir_com_interface_superus(nome_do_arquivo):
         pg.locateOnScreen(r"Imgs\downloads.png"); sleep(3)
         break
     
-    pg.doubleClick(502,356, duration=0.5, interval=0.5)
+    pg.doubleClick(502,356, duration=0.5)
     
     while True:
         if pg.locateOnScreen(r"Imgs\salvar.png", confidence=0.9) is not None:
