@@ -212,6 +212,10 @@ def preencher_informações_pedido(fornecedor, loja, comprador, data_da_proxima_
         pg.press('up', presses=6)
         pg.press('down', presses=2)
         pg.press('enter')
+    elif loja.lower() == "mcp":
+        pg.press('up', presses=6)
+        pg.press('down', presses=3)
+        pg.press('enter')
     else:
         print(f"Loja inválida: {loja}. A digitação será encerrada.")
         sys.exit()

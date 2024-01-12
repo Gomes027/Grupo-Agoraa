@@ -1,9 +1,7 @@
 import os
 import ssl
 import smtplib
-import schedule
 import pandas as pd
-from time import sleep
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -182,7 +180,7 @@ def enviar_email():
     mensagem = MIMEMultipart()
     mensagem["From"] = email_remetente
     mensagem["To"] = ", ".join(email_destinatarios)
-    mensagem["Subject"] = "Validações Iniciais"
+    mensagem["Subject"] = "Relatório de Validações Iniciais"
     mensagem.attach(MIMEText(corpo_do_email, "html"))
 
     try:
@@ -193,9 +191,5 @@ def enviar_email():
     except smtplib.SMTPException as e:
         print(f"Erro ao enviar email: {e}")
 
-# Agendar para executar todos os dias
-schedule.every().day.at("05:00").do(enviar_email)
-
-while True:
-    schedule.run_pending()
-    sleep(1)
+if __name__ == "__main__":
+    enviar_email()

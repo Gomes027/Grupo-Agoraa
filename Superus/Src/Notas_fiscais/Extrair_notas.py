@@ -23,8 +23,13 @@ def interagir_com_interface_superus(nome_do_arquivo):
     
     while True:
         if pg.locateOnScreen(r"Imgs\notas_fiscais.png", confidence=0.9) is not None:
+            sleep(3)
             break
-
+    
+    pg.press("tab", presses=14); sleep(1)
+    pg.press("down", presses=7); sleep(1)
+    pg.hotkey("alt", "f"); sleep(10)
+    
     # Exporta para Excel
     pg.rightClick(276, 374, duration=0.5); sleep(5)
     pg.click(335, 880, duration=0.5)

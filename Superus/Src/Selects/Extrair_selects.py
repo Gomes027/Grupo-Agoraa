@@ -8,25 +8,6 @@ from time import sleep
 # Desabilita o Failsafe do Pyautogui
 pg.FAILSAFE = False
 
-# Funções Auxiliares
-def iniciar_superus():
-    # Caminho para o aplicativo
-    caminho_exe = r"C:\SUPERUS VIX\Superus.exe"
-    subprocess.Popen([caminho_exe])
-
-    while True:
-        if pg.locateOnScreen(r"Imgs\superus.png", confidence=0.9) is not None:
-            break
-        sleep(1)
-
-    pg.write("123456"); sleep(3)
-    pg.press("enter", presses=2, interval= 1)
-
-    while True:
-        if pg.locateOnScreen(r"Imgs\superus_aberto.png", confidence=0.9) is not None:
-            break
-        sleep(1)
-
 def interagir_com_interface_superus(select, data_inicial, data_final, nome_do_arquivo):
     # Abre a execução de selects
     pg.click(270,31, duration=0.5); sleep(1)
@@ -41,7 +22,7 @@ def interagir_com_interface_superus(select, data_inicial, data_final, nome_do_ar
 
     # Insere e executa o select
     sleep(5)
-    pg.typewrite(select)
+    pg.typewrite(select); sleep(1)
     pg.press("enter"); sleep(5)
     pg.press("f8"); sleep(3)
 
@@ -110,8 +91,6 @@ def executar_selects():
         ("1590", None, None, "relatorio_vendas.xlsx"),
         ("1570", None, None, "relatorio_precos_4_lojas.xlsx")
     ]
-
-    iniciar_superus()
 
     # Executar Extração para cada conjunto de dados
     for select, data_inicio, data_fim, nome_arquivo in dados_para_extracao:

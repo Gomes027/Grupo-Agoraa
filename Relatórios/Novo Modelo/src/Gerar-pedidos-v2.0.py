@@ -244,7 +244,8 @@ def preencher_dados_excel(relatorio):
         if valor_total == "#REF!":      
             pg.hotkey('ctrl', 'shift', 'k')
             nome_img = f"{fornecedor} {loja} - NÃO DEU PEDIDO"
-                
+
+                        
         elif float(valor_total) < float(valor_minimo):            
             pg.hotkey('ctrl', 'shift', 'k')
             nome_img = f"{fornecedor} {loja} - NÃO DEU MÍNIMO R${valor_total}"
