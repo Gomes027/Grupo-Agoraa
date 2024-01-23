@@ -57,7 +57,7 @@ def excel_to_html(excel_path, sheet_name):
 
 def enviar_email():
     # Caminho do arquivo Excel
-    excel_file_path = r'F:\BI\RELATORIO_EXTOQUE_EXCEDENTE.xlsx'
+    excel_file_path = r'F:\BI\ESTOQUE_EXCEDENTE.xlsx'
     sheet_name = 'RESUMO'
 
     # Converter a planilha em HTML com estilo personalizado

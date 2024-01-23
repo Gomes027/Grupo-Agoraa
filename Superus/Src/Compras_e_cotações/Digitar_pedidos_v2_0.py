@@ -1,20 +1,25 @@
 import os
+import re
 import csv
 import sys
 import ctypes
 import shutil
+import locale
 import chardet
 import keyboard
 import pytesseract
-from PIL import Image
 import pyautogui as pg
 from io import BytesIO
 from time import sleep
+from PIL import Image, ImageEnhance
 from datetime import date, timedelta
 
 # Configuração do Tesseract
 PATCH_TESSERACT = r'C:\Users\automacao.compras\AppData\Local\Programs\Tesseract-OCR\tesseract.exe'
 pytesseract.pytesseract.tesseract_cmd = PATCH_TESSERACT
+
+# Configuração do locale para usar o formato brasileiro de moeda
+locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
 # FUNÇÔES CORRETIVAS   
 def criar_caminho_imagem(nome_imagem):
@@ -108,20 +113,25 @@ def remover_produtos_sem_quantidade(arquivo_completo):
         writer.writerows(linhas_validas)
     
 def numero_do_pedido():
-    x = 73
-    y = 63
-    width = 75
-    height = 25
-
-    screenshot = pg.screenshot(region=(x, y, width, height))
+    screenshot = pg.screenshot(region=(73, 63, 75, 25))
     imagem_bytesio = BytesIO()
     screenshot.save(imagem_bytesio, format='PNG')
     imagem = Image.open(imagem_bytesio)
-    num_do_pedido = pytesseract.image_to_string(imagem, lang='por')
-    num_do_pedido = num_do_pedido.strip()
-    num_do_pedido = num_do_pedido.replace('\n', '')
-    num_do_pedido = num_do_pedido.replace('\r', '')
 
+    # Calcula o novo tamanho
+    novo_tamanho = (int(imagem.width * 2), int(imagem.height * 2))
+
+    # Redimensiona a imagem com o filtro LANCZOS
+    imagem = imagem.resize(novo_tamanho, Image.LANCZOS)
+
+    # Se necessário, aumente o contraste aqui
+    enhancer = ImageEnhance.Contrast(imagem)
+    imagem = enhancer.enhance(2)
+
+    num_do_pedido = pytesseract.image_to_string(imagem, config='--psm 6', lang='por')
+    num_do_pedido = num_do_pedido.strip().replace('\n', '').replace('\r', '')
+
+    # Tentativa de conversão para inteiro
     try:
         num_do_pedido = int(num_do_pedido)
 
@@ -130,6 +140,35 @@ def numero_do_pedido():
         num_do_pedido = 0
     
     return num_do_pedido
+
+def valor_do_pedido():
+    screenshot = pg.screenshot(region=(305, 126, 75, 25))
+    imagem_bytesio = BytesIO()
+    screenshot.save(imagem_bytesio, format='PNG')
+    imagem = Image.open(imagem_bytesio)
+
+    # Calcula o novo tamanho
+    novo_tamanho = (int(imagem.width * 2), int(imagem.height * 2))
+
+    # Redimensiona a imagem com o filtro LANCZOS
+    imagem = imagem.resize(novo_tamanho, Image.LANCZOS)
+
+    # Se necessário, aumente o contraste aqui
+    enhancer = ImageEnhance.Contrast(imagem)
+    imagem = enhancer.enhance(2)
+
+    valor_do_pedido = pytesseract.image_to_string(imagem, config='--psm 6', lang='por')
+    valor_do_pedido = valor_do_pedido.strip().replace('\n', '').replace('\r', '')
+
+    # Tentativa de conversão para float
+    try:
+        valor_do_pedido = float(valor_do_pedido.replace(",", "."))
+        valor_do_pedido_formatado = locale.currency(valor_do_pedido, grouping=True)
+    except ValueError:
+        print("Erro ao converter o número do pedido para float.")
+        valor_do_pedido_formatado = "R$ 0,00"
+    
+    return valor_do_pedido_formatado
 
 def desativar_capslock():
     return ctypes.windll.user32.GetKeyState(0x14) & 1 != 0
@@ -163,7 +202,7 @@ def finalizar_captura_logs(original_stdout, log_file):
     log_file.close()  # Fecha o arquivo de log
         
 # FUNÇÔES PRINCIPAIS
-def preencher_informações_pedido(fornecedor, loja, comprador, data_da_proxima_visita, arquivo_completo):
+def preencher_informações_pedido(fornecedor, loja, comprador, data_da_proxima_visita, arquivo_completo, tipo_pedido):
     """ Função Responvel por preencher as principais informações do pedido. """
     # Novo Pedido de compra
     pg.click(234, 707, duration=1)
@@ -278,8 +317,9 @@ def preencher_informações_pedido(fornecedor, loja, comprador, data_da_proxima_
             pg.press("enter")
             pg.hotkey("alt", "o")
             sleep(2)
-    
-    remover_produtos_sem_quantidade(arquivo_completo)
+
+    if tipo_pedido == "compras":
+        remover_produtos_sem_quantidade(arquivo_completo)
 
 def digitar_produtos(tipo_pedido, arquivo_completo):
     with open(arquivo_completo) as arquivo:
@@ -331,7 +371,7 @@ def digitar_produtos(tipo_pedido, arquivo_completo):
         pg.press("esc")
         sleep(3)
         
-def salvar_pedido(fornecedor, loja, num_do_pedido, data_pedido, tipo_pedido, data_historico):
+def salvar_pedido(fornecedor, loja, num_do_pedido, data_pedido, tipo_pedido, valor_formatado, data_historico):
     pg.press("f11")
     sleep_por_imagem("salvar_pedido.png")
     
@@ -373,15 +413,15 @@ def salvar_pedido(fornecedor, loja, num_do_pedido, data_pedido, tipo_pedido, dat
 
     if tipo_pedido == "compras":
         dados_lista = []
-        fornecedor_loja = f"{fornecedor} {loja}"
-        dados_lista.append([data_historico, fornecedor_loja, num_do_pedido])
+        
+        dados_lista.append([num_do_pedido, fornecedor, loja, valor_formatado, data_historico])
 
-        with open(r"Outros\Historico_pedidos_compra.csv", 'a', newline='', encoding='utf-8') as arquivo:
+        with open(r"Outros\Historico_compras.csv", 'a', newline='', encoding='utf-8') as arquivo:
             escritor = csv.writer(arquivo, delimiter=';')
             arquivo_vazio = arquivo.tell() == 0
 
             if arquivo_vazio:
-                escritor.writerow(['Data', 'Fornecedor/Loja', 'Numero_do_Pedido'])
+                escritor.writerow(['Numero do Pedido', 'Fornecedor', 'Loja', 'Valor do Pedido', 'Data'])
 
             for linha in dados_lista:
                 escritor.writerow(linha)
@@ -398,7 +438,7 @@ def digitar_pedido(arquivo_completo, tipo_pedido, novo_arquivo):
         print(f"Fornecedor: {fornecedor}, Loja: {loja}, Comprador: {comprador}")
         sleep(1)
         
-        preencher_informações_pedido(fornecedor, loja, comprador, DATA_CORRECAO, arquivo_completo)
+        preencher_informações_pedido(fornecedor, loja, comprador, DATA_CORRECAO, arquivo_completo, tipo_pedido)
     else:
         print(f"Informações do pedido {novo_arquivo} não encontradas.")
         sys.exit()
@@ -407,7 +447,9 @@ def digitar_pedido(arquivo_completo, tipo_pedido, novo_arquivo):
     
     num_do_pedido = numero_do_pedido()
 
-    arquivo_downloads = salvar_pedido(fornecedor, loja, num_do_pedido, DATA_PEDIDO, tipo_pedido, DATA_FORMATADA)
+    valor_formatado = valor_do_pedido()
+
+    arquivo_downloads = salvar_pedido(fornecedor, loja, num_do_pedido, DATA_PEDIDO, tipo_pedido, valor_formatado, DATA_FORMATADA)
     
     if tipo_pedido == "compras":
         shutil.move(arquivo_downloads, r"F:\COMPRAS\Automações.Compras\Fila de Pedidos\Arquivos\Compras\PDFs")

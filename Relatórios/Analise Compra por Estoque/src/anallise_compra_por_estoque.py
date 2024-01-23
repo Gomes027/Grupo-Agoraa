@@ -6,7 +6,7 @@ import pyautogui as pg
 
 def atualizar_analise_compra_por_estoque():
     # Caminho para o arquivo Excel que você deseja abrir
-    caminho_do_arquivo = r"F:\COMPRAS\Analise compra por estoque v4.11.xlsb"
+    caminho_do_arquivo = r"F:\COMPRAS\Analise compra por estoque v4.12.xlsb"
 
     # Verifique se o arquivo existe
     if os.path.exists(caminho_do_arquivo):
@@ -21,7 +21,6 @@ def atualizar_analise_compra_por_estoque():
             pg.press("enter"); sleep(1)
             break
 
-    pg.hotkey("alt", "u", "x", "m", interval=1); sleep(3)
     pg.hotkey("ctrl", "alt", "f5"); sleep(180)
     pg.hotkey("ctrl", "shift", "p")
     print("Arquivo Salvo!")

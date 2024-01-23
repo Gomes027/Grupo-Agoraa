@@ -10,8 +10,7 @@ warnings.filterwarnings('ignore', category=UserWarning, module='pandas.core.tool
 
 # Variáveis globais
 colunas_moeda = ["VALOR CUSTO TOTAL", "VALOR VENDA TOTAL", "CUSTO TOTAL EXCEDENTE"]
-colunas_milhar = ["QTDE ITENS", "QTDE EXCEDENTE", "ESTOQUE EXCEDENTE"]
-CAMINHO_ARQUIVO = r'F:\BI\RELATORIO_EXTOQUE_EXCEDENTE.xlsx'
+CAMINHO_ARQUIVO = r'F:\BI\ESTOQUE_EXCEDENTE.xlsx'
 
 # Importar Arquivos excel como Dataframes
 df_relatorio = pd.read_excel(r"F:\COMPRAS\relatorio_tresmann.xlsx")
@@ -117,7 +116,7 @@ def adicionar_linha_total(df):
     total_excedente = df["QTDE EXCEDENTE"].sum()
     total_custo = df["VALOR CUSTO TOTAL"].sum()
     total_venda = df["VALOR VENDA TOTAL"].sum()
-    df.loc["Total"] = ["", total_itens, total_excedente, total_custo, total_venda]
+    df.loc["Total"] = ["Total:", total_itens, total_excedente, total_custo, total_venda]
     return df
 
 def formatar_qtde_excedente(df):
@@ -139,7 +138,7 @@ def processar_dados_por_loja(df, loja):
             return round(num, 2)
         else:
             return round(num, 1)
-        
+
     df['ESTOQUE ATUAL'] = df['ESTOQUE ATUAL'].apply(formatar_numero)
     df['ESTOQUE EXCEDENTE'] = df['ESTOQUE EXCEDENTE'].apply(formatar_numero)
 
@@ -147,7 +146,10 @@ def processar_dados_por_loja(df, loja):
     df['VALIDADE'] = df['VALIDADE'].dt.strftime('%d/%m/%Y')
 
     df_filtrado = df[((df["LOJA"] == loja) & (df["CUSTO TOTAL EXCEDENTE"] > 0))].copy()
-    df_ordenado = df_filtrado[["CODIGO" ,"NOME", "SETOR", "VALIDADE", "ESTOQUE ATUAL", "ESTOQUE EXCEDENTE", "CUSTO TOTAL EXCEDENTE"]].sort_values(by=["CUSTO TOTAL EXCEDENTE"], ascending=False)
+    df_filtrado['ÚLTIMA AÇÃO'] = ''  # Adicionando a coluna "ÚLTIMA AÇÃO" vazia
+    df_filtrado['NOVA AÇÃO'] = ''  # Adicionando a coluna "NOVA AÇÃO" vazia
+
+    df_ordenado = df_filtrado[["CODIGO", "NOME", "SETOR", "VALIDADE", "ESTOQUE ATUAL", "ESTOQUE EXCEDENTE", "CUSTO TOTAL EXCEDENTE", "ÚLTIMA AÇÃO", "NOVA AÇÃO"]].sort_values(by=["CUSTO TOTAL EXCEDENTE"], ascending=False)
     return df_ordenado
 
 # Processando o resumo de itens com estoque excedente por loja
@@ -156,14 +158,16 @@ resultado_loja_STT = processar_dados_por_loja(df_relatorio_calculos, "TRESMANN -
 resultado_loja_VIX = processar_dados_por_loja(df_relatorio_calculos, "TRESMANN - VIX")
 
 # Funções de Salvamento e Formatação de Arquivo Excel
-def ajustar_formato_colunas(escritor, nome_aba, dataframe, colunas_moeda, colunas_milhar):
+def ajustar_formato_colunas(escritor, nome_aba, dataframe, colunas_moeda):
     """Ajusta a largura e o formato das colunas."""
-    for coluna in dataframe:
+    for coluna in dataframe.columns:
+        # Aplicar 'map' na série (coluna) e calcular a largura máxima
         largura_coluna = max(dataframe[coluna].astype(str).map(len).max(), len(coluna)) + 2
         indice_coluna = dataframe.columns.get_loc(coluna) + 1
         escritor.sheets[nome_aba].column_dimensions[get_column_letter(indice_coluna)].width = largura_coluna
 
-        if colunas_moeda and coluna in colunas_moeda:
+        # Seus códigos para formatar as colunas como moeda ou milhar devem ser inseridos aqui
+        if coluna in colunas_moeda:
             aplicar_formato_moeda(escritor, nome_aba, indice_coluna, dataframe.shape[0])
 
 def aplicar_formato_moeda(escritor, nome_aba, indice_coluna, quantidade_linhas):
@@ -176,23 +180,45 @@ def salvar_dfs_no_excel(escritor, informacoes_dfs):
     """Salva os DataFrames em suas respectivas abas e ajusta as colunas."""
     for info_df in informacoes_dfs:
         info_df['dataframe'].to_excel(escritor, sheet_name=info_df['nome_aba'], index=False)
-        ajustar_formato_colunas(escritor, info_df['nome_aba'], info_df['dataframe'], colunas_moeda, colunas_milhar)
+        ajustar_formato_colunas(escritor, info_df['nome_aba'], info_df['dataframe'], colunas_moeda)
     
     print("Relatório de Estoque Gerado!")
 
-def anexar_aba_historico(df_novo_historico):
-    """Anexa os novos dados à aba 'HISTÓRICO P1'."""
+def atualizar_historico_resumo():
+    """Atualiza a aba 'HISTÓRICO RESUMO' com as primeiras três linhas de dados do 'RESUMO'."""
+    df_resumo_relatorio = pd.read_excel(CAMINHO_ARQUIVO, engine='openpyxl', sheet_name='RESUMO')
+
     try:
-        df_historico_existente = pd.read_excel(CAMINHO_ARQUIVO, sheet_name='HISTÓRICO P1')
-    except ValueError:  # Se a aba não existir, criar um DataFrame vazio
+        df_historico_existente = pd.read_excel(CAMINHO_ARQUIVO, sheet_name='HISTÓRICO RESUMO')
+    except (FileNotFoundError, ValueError):  # Trata tanto a ausência do arquivo quanto a da aba
         df_historico_existente = pd.DataFrame()
 
-    df_historico_combinado = pd.concat([df_historico_existente, df_novo_historico], ignore_index=True)
-    df_historico_combinado['DATA'] = pd.to_datetime(df_historico_combinado['DATA'], format='%d/%m/%Y', errors='coerce').dt.strftime('%d/%m/%Y')
-    
-    with pd.ExcelWriter(CAMINHO_ARQUIVO, engine='openpyxl', mode='a', if_sheet_exists='replace') as escritor:
-        df_historico_combinado.to_excel(escritor, sheet_name='HISTÓRICO P1', index=False)
-        ajustar_formato_colunas(escritor, 'HISTÓRICO P1', df_historico_combinado, colunas_moeda, colunas_milhar)
+    # Pegando apenas as 3 primeiras linhas de 'RESUMO' e criando uma cópia independente
+    df_resumo_atualizado = df_resumo_relatorio.head(3).copy()
+    df_resumo_atualizado['DATA'] = datetime.now().strftime('%d/%m/%Y')
+    df_historico_atualizado = pd.concat([df_historico_existente, df_resumo_atualizado], ignore_index=True)
+
+    return df_historico_atualizado
+
+def salvar_historico_acoes():
+    try:
+        df_historico_ações = pd.read_excel(CAMINHO_ARQUIVO, engine='openpyxl', sheet_name='HISTÓRICO AÇÕES')
+    except (FileNotFoundError, ValueError):  # Trata tanto a ausência do arquivo quanto a da aba
+        df_historico_ações = pd.DataFrame()
+
+    sheets_lojas = ['TRESMANN - SMJ', 'TRESMANN - STT', 'TRESMANN - VIX']
+
+    for sheet in sheets_lojas:
+        df = pd.read_excel(CAMINHO_ARQUIVO, sheet_name=sheet)
+        # Filtrar as linhas onde "NOVA AÇÃO" não está vazia
+        df_filtrado = df[df['NOVA AÇÃO'].notna() & (df['NOVA AÇÃO'] != '')].copy()
+        if not df_filtrado.empty:
+            df_filtrado['LOJA'] = sheet  # Nome da sheet como valor da coluna "LOJA"
+            df_filtrado['DATA'] = datetime.now().strftime('%d/%m/%Y')  # Adicionando a data atual
+            df_filtrado = df_filtrado[['CODIGO', 'LOJA', 'DATA', 'NOVA AÇÃO']]
+            df_historico_ações = pd.concat([df_historico_ações, df_filtrado], ignore_index=True)
+
+    return df_historico_ações
 
 def verificar_existencia_arquivo():
     """Verifica se o arquivo Excel existe."""
@@ -203,23 +229,33 @@ def verificar_existencia_arquivo():
     except FileNotFoundError:
         # Se o arquivo não existir, retorna False
         return False
+    
+informacoes_dfs = [
+    {"nome_aba": 'RESUMO', "dataframe": df_relatorio_resumo},
+    {"nome_aba": 'TRESMANN - SMJ', "dataframe": resultado_loja_SMJ},
+    {"nome_aba": 'TRESMANN - STT', "dataframe": resultado_loja_STT},
+    {"nome_aba": 'TRESMANN - VIX', "dataframe": resultado_loja_VIX}
+]
 
 # Código principal para salvar os DataFrames
 if verificar_existencia_arquivo():
-    # Se o arquivo existir, ler a aba 'RESUMO' e preparar os dados para 'HISTÓRICO P1'
-    df_resumo_relatorio = pd.read_excel(CAMINHO_ARQUIVO, engine='openpyxl', sheet_name='RESUMO')
-    df_novo_historico = df_resumo_relatorio.iloc[:-1].copy()
-    df_novo_historico['DATA'] = datetime.now().strftime('%d/%m/%Y')
-    anexar_aba_historico(df_novo_historico)
-else:
-    # Se o arquivo não existir, criar um novo arquivo e salvar os DataFrames
-    with pd.ExcelWriter(CAMINHO_ARQUIVO, engine='openpyxl') as writer:
-        # Salvar os DataFrames em abas separadas no arquivo Excel
-        informacoes_dfs = [
-            {"nome_aba": 'RESUMO', "dataframe": df_relatorio_resumo},
-            {"nome_aba": 'TRESMANN - SMJ', "dataframe": resultado_loja_SMJ},
-            {"nome_aba": 'TRESMANN - STT', "dataframe": resultado_loja_STT},
-            {"nome_aba": 'TRESMANN - VIX', "dataframe": resultado_loja_VIX}
-        ]
+    df_historico_atualizado = atualizar_historico_resumo()
+    df_historico_acoes = salvar_historico_acoes()
+
+    with pd.ExcelWriter(CAMINHO_ARQUIVO, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+        # Primeiro salvar todas as abas, exceto 'HISTÓRICO RESUMO'
         salvar_dfs_no_excel(writer, informacoes_dfs)
+
+        # Depois salvar o 'HISTÓRICO RESUMO' atualizado
+        df_historico_atualizado.to_excel(writer, sheet_name='HISTÓRICO RESUMO', index=False)
+        ajustar_formato_colunas(writer, 'HISTÓRICO RESUMO', df_historico_atualizado, colunas_moeda)
+
+        if not df_historico_acoes.empty:
+            df_historico_acoes.to_excel(writer, sheet_name='HISTÓRICO AÇÕES', index=False)
+            ajustar_formato_colunas(writer, 'HISTÓRICO AÇÕES', df_historico_acoes, colunas_moeda)
+else:
+    with pd.ExcelWriter(CAMINHO_ARQUIVO, engine='openpyxl') as writer:
+        # Se o arquivo não existir, apenas salvar os DataFrames
+        salvar_dfs_no_excel(writer, informacoes_dfs)
+
 enviar_email()

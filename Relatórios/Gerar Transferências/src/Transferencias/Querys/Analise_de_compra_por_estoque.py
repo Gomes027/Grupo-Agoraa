@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Carrega o Dataframe df_analise_compra_por_estoque
-df_analise_compra_por_estoque = pd.read_excel(r"F:\COMPRAS\Analise compra por estoque v4.11.xlsb", sheet_name="ANÁLISE_ESTOQUE_LOJA", header=9)
+df_analise_compra_por_estoque = pd.read_excel(r"F:\COMPRAS\Analise compra por estoque v4.12.xlsb", sheet_name="ANÁLISE_ESTOQUE_LOJA", header=9)
 df_analise_compra_por_estoque = df_analise_compra_por_estoque.rename(columns={'Rótulos de Linha': 'NOME'})
 
 # Sufixos e nomes das lojas correspondentes

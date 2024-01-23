@@ -1,12 +1,29 @@
 import os
 import shutil
 import schedule
+import subprocess
 from time import sleep
 import pyautogui as pg
 from datetime import date
 
 # Desabilita o Failsafe do Pyautogui
 pg.FAILSAFE = False
+
+def iniciar_superus():
+    """
+    Inicia o aplicativo Superus e aguarda até que esteja pronto para uso.
+    """
+    subprocess.Popen([r"C:\SUPERUS VIX\Superus.exe"])
+    
+    while True:
+        if pg.locateOnScreen(r"Imgs\superus.png", confidence=0.9):
+            pg.write("123456"); sleep(3)
+            pg.press("enter", presses=2, interval=1)
+            break
+        
+    while True:
+        if pg.locateOnScreen(r"Imgs\superus_aberto.png", confidence=0.9):
+            break
 
 def atualizar_data():
     """ Atualiza e retorna a data formatada para o dia atual. """
@@ -53,7 +70,7 @@ def aguardar_e_mover_download(arquivo_download, pasta_destino_1, pasta_destino_2
 
         print("Extraido com Sucesso!"); print("\n")
 
-    pg.press("f9", presses=2, interval=2)
+    pg.press("f9")
 
 def extrair_historico_pedidos():
     """ Função principal para extrair o histórico de pedidos. """
@@ -66,5 +83,5 @@ def extrair_historico_pedidos():
     aguardar_e_mover_download(r"C:\Users\automacao.compras\Downloads\historico de pedidos _oficial.xlsx", r"F:\COMPRAS", r"F:\BI\Bases")
 
 if __name__ == "__main__":
-    pg.hotkey("win", "3")
+    iniciar_superus()
     extrair_historico_pedidos()

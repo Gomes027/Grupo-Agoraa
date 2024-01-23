@@ -5,8 +5,6 @@ import pyautogui as pg
 import pygetwindow as gw
 from time import sleep
 
-caminho_pdf = "F:\COMPRAS\Automações.Compras\Fila de Pedidos\Arquivos\Compras\PDFs"
-
 def abrir_janela(nome_da_janela):
     """ Seleciona a janela especificada e a ativa. """
     try:
@@ -50,9 +48,11 @@ def procesar_pdfs(arquivos, tipo_de_pedido):
 
         if tipo_de_pedido == "cotação":
             procurar_botao(r"Imgs\grupo_cotacao.png", clicar=True)
+            caminho_pdf = "F:\COMPRAS\Automações.Compras\Fila de Pedidos\Arquivos\Cotações\PDFs"
 
         elif tipo_de_pedido == "compras":
             procurar_botao(r"Imgs\grupo_compras.png", clicar=True)
+            caminho_pdf = "F:\COMPRAS\Automações.Compras\Fila de Pedidos\Arquivos\Compras\PDFs"
 
 
         procurar_botao(r"Imgs\pesquisar.png", clicar=True)
@@ -68,8 +68,9 @@ def procesar_pdfs(arquivos, tipo_de_pedido):
                 pg.press("esc")
                 break
 
-            elif pg.locateOnScreen(r"Imgs\pedidos_encontrados.png") is not None:
+            elif pg.locateOnScreen(r"Imgs\pedidos_encontrados.png", confidence=0.3) is not None:
                 pg.press("enter")
+                sleep(3)
 
                 # Seleciona o pedido no WhatsApp
                 pg.doubleClick(1063, 521, duration=0.5)

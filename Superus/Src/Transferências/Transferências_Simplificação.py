@@ -57,7 +57,7 @@ def processar_arquivo(caminho_arquivo):
         pg.typewrite(codigo); pg.press("enter")
         procurar_botão(r"Imgs\qtde_2.png", "não")
 
-        pg.typewrite(quantidade); pg.press("enter")
+        pg.typewrite(quantidade); sleep(1); pg.press("enter")
         procurar_botão(r"Imgs\menu_digitacao.png", "não"); sleep(1)
             
         linhas.remove(linha)

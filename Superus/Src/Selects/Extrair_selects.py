@@ -98,4 +98,5 @@ def executar_selects():
         sleep(5)
         
 if __name__ == "__main__":
+    pg.hotkey("win", "3")
     executar_selects()

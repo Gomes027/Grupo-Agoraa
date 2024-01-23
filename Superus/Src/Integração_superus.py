@@ -71,8 +71,8 @@ if __name__ == "__main__":
 
     while True:
         arquivos = {arq for arq in os.listdir(DIR_PEDIDOS) if arq.endswith(".csv")}
-        pdfs_compras = {arq for arq in os.listdir(DIR_PDF_PEDIDOS) if arq.lower().endswith(".pdf")}
         pdfs_cotacao = {arq for arq in os.listdir(DIR_PDF_COTACAO) if arq.lower().endswith(".pdf")}
+        pdfs_compras = {arq for arq in os.listdir(DIR_PDF_PEDIDOS) if arq.lower().endswith(".pdf")}
 
         if arquivos:
             arquivos_ordenados = sorted(
@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
         else:
             agora = datetime.now()
-            if 8 <= agora.hour <= 18 and agora - ultima_execucao_extracao >= timedelta(minutes=5):
+            if 8 <= agora.hour < 18 and agora - ultima_execucao_extracao >= timedelta(minutes=5):
                 extrair_notas_fiscais()
                 ultima_execucao_extracao = agora
             elif agora.strftime("%H:%M") == "20:00":
@@ -112,5 +112,5 @@ if __name__ == "__main__":
             elif agora.strftime("%H:%M") == "21:00":
                 iniciar_superus()
                 executar_selects()
-
+                                                        
         sleep(1)
