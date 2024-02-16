@@ -44,7 +44,7 @@ def pegar_dados():
                 return dados
 
 # Função para aguardar até que a área de transferência tenha conteúdo
-def aguardar_conteudo_area_transferencia(atalho, tempo_espera=30):
+def aguardar_conteudo_area_transferencia(atalho, tempo_espera=60):
     pyperclip.copy("")  # Limpa a área de transferência
     conteudo_inicial = pyperclip.paste()  # Guarda o conteúdo inicial (vazio)
 
@@ -91,8 +91,12 @@ def processar_e_salvar_dados(caminho_da_pasta):
         with open(caminho_completo, mode='r', newline='', encoding='utf-8') as file:
             reader = csv.reader(file, delimiter=';')
             for linha in reader:
-                if linha[1] != '0':
+                # Verifica se a linha tem pelo menos 2 elementos antes de acessar linha[1]
+                if len(linha) > 1 and linha[1] != '0' and linha[1] != '':
                     linhas_validas.append(linha)
+                else:
+                    # Pode usar 'pass' ou adicionar lógica para lidar com linhas inválidas
+                    pass
 
         # Reescrever o arquivo com as linhas válidas
         with open(caminho_completo, mode='w', newline='', encoding='utf-8') as file:
@@ -198,8 +202,8 @@ def preencher_dados_excel(relatorio):
                 pg.hotkey("ctrl", "shift", "n")
             elif loja_macro.strip() == 'B': # VIX
                 pg.hotkey("ctrl", "shift", "b")
-            elif loja_macro.strip() == 'C': # SMJ e STT
-                pg.hotkey("ctrl", "shift", "c")
+            elif loja_macro.strip() == 'I': # SMJ e STT
+                pg.hotkey("ctrl", "shift", "i")
             elif loja_macro.strip() == 'X': # SMJ e VIX
                 pg.hotkey("ctrl", "shift", "x")
             elif loja_macro.strip() == 'E': # SMJ, STT e MCP

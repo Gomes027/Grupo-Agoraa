@@ -133,7 +133,7 @@ def analise_historico_pedidos(ARQUIVO):
         "Último Pedido": ultimo_pedido,
     }
 
-def listar_arquivos(diretorio, arquivo_adicional=None):
+def listar_arquivos(diretorio, arquivo_adicional):
     informacoes_arquivos = []
 
     # Função para obter informações do arquivo
@@ -149,8 +149,10 @@ def listar_arquivos(diretorio, arquivo_adicional=None):
     # Adiciona os arquivos do diretório
     for arquivo in os.listdir(diretorio):
         caminho_completo = os.path.join(diretorio, arquivo)
-        if os.path.isfile(caminho_completo):
-            informacoes_arquivos.append(obter_informacoes_arquivo(caminho_completo))
+        if os.path.isfile(caminho_completo) and arquivo.endswith('.xlsx'):
+            info_arquivo = obter_informacoes_arquivo(caminho_completo)
+            if info_arquivo is not None:
+                informacoes_arquivos.append(info_arquivo)
 
     # Ordena os arquivos por data, do mais novo para o mais antigo
     informacoes_arquivos.sort(key=lambda x: x["data"], reverse=True)
@@ -165,7 +167,7 @@ def enviar_email():
     # Chama as funções que leem os arquivos e retornam análises
     analise_tresmann = analise_relatorio_tresmann(r"F:\COMPRAS\relatorio_tresmann.xlsx")
     analise_pedidos = analise_historico_pedidos(r"F:\COMPRAS\historico de pedidos _oficial.xlsx")
-    lista_arquivos = listar_arquivos(r"F:\BI\Bases", r"F:\COMPRAS\Analise compra por estoque v4.11.xlsb")
+    lista_arquivos = listar_arquivos(r"F:\BI\Bases", r"F:\COMPRAS\Analise compra por estoque v4.12.xlsb")
 
     print("Dados analisados")
 

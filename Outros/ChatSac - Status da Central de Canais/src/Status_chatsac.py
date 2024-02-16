@@ -1,67 +1,65 @@
-import ssl
+import asyncio
 import smtplib
+import ssl
 import schedule
-from PIL import Image
 from time import sleep
 from datetime import date
-from selenium import webdriver
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from config import *
+from pyppeteer import launch
+from pyppeteer.errors import TimeoutError
+from config import EMAIL_LOGIN, SENHA_LOGIN, URL, DIR_IMAGEM, REMETENTE, DESTINATARIO, SENHA_REMETENTE
 
-def status_chatsac():
-  # Opções
-  chrome_options = Options() 
-  chrome_options.add_argument("start-maximized") # Iniciar maximizado 
+async def status_chatsac():
+  browser = None
+  try:
+      browser = await launch(headless=False, args=['--start-maximized'])
+      page = await browser.newPage()
+      # Defina a viewport para a resolução desejada, por exemplo, 1920x1080
+      await page.setViewport({'width': 1280, 'height': 960})
+      await page.goto(URL)
+      await page.waitForSelector("input[type='text']")
+      await page.type("input[type='text']", EMAIL_LOGIN)
+      await page.type("input[name='Senha']", SENHA_LOGIN)
+      login_button_selector = "button[class='MuiButtonBase-root MuiButton-root MuiButton-contained w-full MuiButton-containedPrimary MuiButton-containedSizeLarge MuiButton-sizeLarge']"
+      await page.click(login_button_selector)
 
-  # Inicia o WebDriver
-  driver = webdriver.Chrome(options=chrome_options)
-  driver.get(URL)
-  driver.implicitly_wait(20)
+      # Clique no elemento SVG específico
+      svg_selector = "svg[data-icon='plug'].svg-inline--fa.fa-plug.fa-lg"
+      await page.waitForSelector(svg_selector)
+      await page.click(svg_selector)
 
-  #Preenche os dados e faz login
-  driver.find_element(By.XPATH, "//input[@type='text'][contains(@class, 'MuiInputBase-input')]").send_keys(EMAIL_LOGIN)
-  driver.find_element(By.NAME, 'Senha').send_keys(SENHA_LOGIN)
-  driver.find_element(By.XPATH, "//button[@class='MuiButtonBase-root MuiButton-root MuiButton-contained w-full MuiButton-containedPrimary MuiButton-containedSizeLarge MuiButton-sizeLarge']").click()
-  driver.implicitly_wait(20)
-
-  # Central de canais
-  driver.find_element(By.XPATH, "//span[@class='cursor-pointer']").click()
-  sleep(5)
-
-  # Tira print e recorta a imagem
-  driver.save_screenshot(DIR_IMAGEM)
-  imagem = Image.open(DIR_IMAGEM)
-  area_corte = (161, 76, 1120, 550)
-  imagem_cortada = imagem.crop(area_corte)
-  imagem_cortada.save(DIR_IMAGEM)
-
-  driver.quit() # Fecha o webdriver
+      popup_selector = ".MuiDialog-paper"
+      await page.waitForSelector(popup_selector, {'visible': True, 'timeout': 60000})
+      await asyncio.sleep(5)
+      element = await page.querySelector(popup_selector)
+      await element.screenshot({'path': DIR_IMAGEM})
+      return True
+  except Exception as e:
+      print(f"Erro ao executar status_chatsac: {e}")
+      return False
+  finally:
+      if browser is not None:
+          await browser.close()
 
 def enviar_email():
-  # Dados do email
   mensagem = MIMEMultipart()
   mensagem["From"] = REMETENTE
   mensagem["To"] = ", ".join(DESTINATARIO)
-  mensagem["Subject"] = f"ChatSac Status"
-
+  mensagem["Subject"] = "ChatSac Status"
+  
   with open(DIR_IMAGEM, "rb") as f:
       img_data = f.read()
-
-  # Anexando a imagem para uso no HTML
+  
   img_html = MIMEImage(img_data)
   img_html.add_header("Content-ID", "<CHATSAC>")
   mensagem.attach(img_html)
-
-  # Anexando a imagem como um anexo regular
+  
   img_anexo = MIMEImage(img_data)
   img_anexo.add_header("Content-Disposition", "attachment", filename="Chatsac.jpg")
   mensagem.attach(img_anexo)
-
-  # Corpo do email em HTML
+  
   html = """\
   <html>
     <body>
@@ -72,7 +70,7 @@ def enviar_email():
   """
   parte_html = MIMEText(html, "html")
   mensagem.attach(parte_html)
-
+  
   try:
       with smtplib.SMTP_SSL("mail.agoraa.com.br", 465, context=ssl.create_default_context()) as server:
           server.login(REMETENTE, SENHA_REMETENTE)
@@ -80,20 +78,13 @@ def enviar_email():
   except smtplib.SMTPException as e:
       print(f"Erro ao enviar email: {e}")
 
-def job():
-    print("Executando as tarefas agendadas...")
-    try:
-      status_chatsac()
-    except:
-      status_chatsac()
+def main():
+    download_sucesso = False
+
+    while not download_sucesso:
+        download_sucesso = asyncio.run(status_chatsac())
 
     enviar_email()
 
-DIR_IMAGEM = r"Img\ChatSac.png"
-
-# Agendar para executar todos os dias às 06:30 AM
-schedule.every().day.at("06:00").do(job)
-
-while True:
-    schedule.run_pending()
-    sleep(1)
+if __name__ == '__main__':
+    main()

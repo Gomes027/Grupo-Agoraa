@@ -205,8 +205,7 @@ def finalizar_captura_logs(original_stdout, log_file):
 def preencher_informações_pedido(fornecedor, loja, comprador, data_da_proxima_visita, arquivo_completo, tipo_pedido):
     """ Função Responvel por preencher as principais informações do pedido. """
     # Novo Pedido de compra
-    pg.click(234, 707, duration=1)
-    sleep(3)
+    pg.click(234, 707, duration=1); sleep(5)
     pg.press('F2')
     
     while True:
@@ -214,7 +213,7 @@ def preencher_informações_pedido(fornecedor, loja, comprador, data_da_proxima_
             break
 
     # Preenche o Fornecedor
-    pg.click(143, 100, duration=1)
+    pg.click(143, 100, duration=1); sleep(2)
     keyboard.write(fornecedor)
     pg.press('enter')
     pg.hotkey('alt', 'o')
@@ -333,7 +332,7 @@ def digitar_produtos(tipo_pedido, arquivo_completo):
                 codigo, quantidade, embalagem  = linha.strip().split(";")
 
             # Digita o codigo do produto
-            pg.write(codigo); pg.press("enter")
+            pg.write(codigo); pg.press("enter"); sleep(0.5)
             
             if pg.locateOnScreen(bloqueado) is not None: 
                 produto_bloqueado_ou_fora_do_mix() # Corrige o erro de produto bloqueado
@@ -354,7 +353,7 @@ def digitar_produtos(tipo_pedido, arquivo_completo):
                     pg.write(preço)
                     pg.press("enter")
                 
-                pg.hotkey("alt", "o")
+                pg.hotkey("alt", "o"); sleep(0.5)
 
                 if pg.locateOnScreen(preço_de_venda) is not None:
                     sem_preço_de_venda_ou_custo_unitário() # Corrige o erro de produto sem preço de venda

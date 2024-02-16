@@ -35,7 +35,7 @@ def interagir_com_interface_superus(nome_do_arquivo):
     pg.click(335, 880, duration=0.5)
     
     while True:
-        pg.locateOnScreen(r"Imgs\meu computador.png"); sleep(3)
+        pg.locateOnScreen(r"Imgs\meu_computador.png"); sleep(3)
         break
     
     pg.click(365, 472, duration=0.5)
