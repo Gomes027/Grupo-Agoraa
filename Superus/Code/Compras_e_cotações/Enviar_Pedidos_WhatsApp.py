@@ -100,3 +100,17 @@ def procesar_pdfs(arquivos, tipo_de_pedido):
         os.remove(caminho_completo)
 
     abrir_janela("Superus")
+
+DIR_PDF_PEDIDOS = r"F:\COMPRAS\Automações.Compras\Fila de Pedidos\Arquivos\Compras\PDFs"
+DIR_PDF_COTACAO = r"F:\COMPRAS\Automações.Compras\Fila de Pedidos\Arquivos\Cotações\PDFs"
+
+pdfs_cotacao = {arq for arq in os.listdir(DIR_PDF_COTACAO) if arq.lower().endswith(".pdf")}
+pdfs_compras = {arq for arq in os.listdir(DIR_PDF_PEDIDOS) if arq.lower().endswith(".pdf")}
+
+if pdfs_cotacao:
+    # Processamento dos PDFs de cotação
+    procesar_pdfs(pdfs_cotacao, "cotação")
+
+elif pdfs_compras:
+    # Processamento dos PDFs de compras
+    procesar_pdfs(pdfs_compras, "compras")  

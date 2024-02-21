@@ -1,16 +1,11 @@
 import os
 import csv
 import chardet
-import pandas as pd
 from time import sleep
-import pyautogui as pg
 from datetime import datetime, timedelta
-from Selects.Extrair_selects import executar_selects
-from Notas_fiscais.Extrair_notas import extrair_notas_fiscais
-from Compras_e_cotações.Digitar_pedidos_v2_0 import digitar_pedido
+from Compras_e_cotações.Digitar_pedidos_v3_0 import OperacoesDePedido
 from Compras_e_cotações.Enviar_Pedidos_WhatsApp import procesar_pdfs
-from Transferências.Transferências_Simplificação import digitar_transferencia
-from Historico_pedidos.Extrair_historico_de_pedidos import extrair_historico_pedidos
+from Transferências.Transferências_Simplificação import TransferenciasEntreLojas
 from Validades.src.Calculadora_de_validades import processar_arquivo
 
 # Constantes
@@ -46,7 +41,7 @@ def verificar_tipo_arquivo(arquivo_completo):
 def pontuacao_tipo_arquivo(tipo_pedido):
     """                                                     
     Atribui uma pontuação a cada tipo de pedido para fins de ordenação.
-    """
+    """ 
     return {"transferência": 1, "cotação": 2, "compras": 3}.get(tipo_pedido, 4)
 
 primeira_vez = True
@@ -78,9 +73,11 @@ if __name__ == "__main__":
                 tipo_pedido = verificar_tipo_arquivo(arquivo_completo)
                 
                 if tipo_pedido == "transferência":
-                    digitar_transferencia(arquivo, arquivo_completo)
+                    transferencia = TransferenciasEntreLojas(arquivo_completo)
+                    transferencia.executar()
                 elif tipo_pedido in ["cotação", "compras"]:
-                    digitar_pedido(arquivo_completo, tipo_pedido, arquivo)
+                    pedidos = OperacoesDePedido()
+                    pedidos.executar_automacao(arquivo_completo, tipo_pedido, arquivo)
 
                 os.remove(arquivo_completo)
                 break

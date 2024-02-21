@@ -1,5 +1,4 @@
 import os
-import re
 import csv
 import sys
 import ctypes
@@ -90,7 +89,7 @@ def sleep_por_imagem(imagem):
     """ Função que aguarda um elemento ou pagina carregar. """
     while True: # Aguarda até alguma pagina ou elemento carregar, via imagem
         imagem_completa = os.path.join(r"C:\Users\automacao.compras\Pictures\Imgs\Pedidos de Compra", imagem)
-        localizacao = pg.locateOnScreen(imagem_completa)
+        localizacao = pg.locateOnScreen(imagem_completa, confidence=0.9)
         if localizacao is not None:
             break  
         
