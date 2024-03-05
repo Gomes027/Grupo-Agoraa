@@ -1,5 +1,4 @@
 import os
-import sys
 import shutil
 import subprocess
 import pyautogui as pg
@@ -31,7 +30,7 @@ def interagir_com_interface_superus(select, data_inicial, data_final, nome_do_ar
 
     # Aguarda a aba consultas carregar
     while True:
-        if pg.locateOnScreen(r"imgs\executar_consultas.png") is not None:
+        if pg.locateOnScreen(r"imgs\executar_consultas.png", confidence=0.9) is not None:
             break
         
     pg.click(415, 247, duration=0.5)
@@ -57,10 +56,10 @@ def interagir_com_interface_superus(select, data_inicial, data_final, nome_do_ar
     # Exportar para excel
     pg.rightClick(808, 567, duration=0.5); sleep(3)
     pg.click(863, 810, duration=0.5)
-    pg.locateOnScreen(r"Imgs\explorer.png"); sleep(3)
+    pg.locateOnScreen(r"Imgs\explorer.png"); sleep(6)
     
     nome_arquivo_sem_extensao = os.path.splitext(nome_do_arquivo)[0]
-    pg.typewrite(nome_arquivo_sem_extensao); sleep(3); pg.press("enter")
+    pg.write(nome_arquivo_sem_extensao); sleep(3); pg.press("enter")
     
 def aguardar_e_mover_download(arquivo_download, pasta_destino, nome_do_arquivo):
     while True:
@@ -75,7 +74,7 @@ def aguardar_e_mover_download(arquivo_download, pasta_destino, nome_do_arquivo):
                 os.remove(arquivo_antigo)
             
             # Tenta mover o arquivo
-            shutil.move(arquivo_download, pasta_destino); sleep(3)
+            shutil.move(arquivo_download, pasta_destino); sleep(10)
             pg.press("f9")  # Sai para o menu principal
 
             print("Arquivo salvo!")
@@ -110,6 +109,7 @@ def executar_selects():
     for select, data_inicio, data_fim, nome_arquivo in dados_para_extracao:
         extrair_dados(select, data_inicio, data_fim, nome_arquivo)
         sleep(5)
+    pg.press("f9")
         
 if __name__ == "__main__":
     iniciar_superus()

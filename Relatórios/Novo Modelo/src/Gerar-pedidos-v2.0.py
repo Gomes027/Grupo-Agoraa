@@ -214,6 +214,10 @@ def preencher_dados_excel(relatorio):
                 pg.hotkey("ctrl", "shift", "v") 
             elif loja_macro.strip() == 'Z': # VIX, SMJ, STT e MCP
                 pg.hotkey("ctrl", "shift", "z")
+            elif loja_macro.strip() == 'G': # VIX e MCP
+                pg.hotkey("ctrl", "shift", "g")
+            elif loja_macro.strip() == 'D': # SMJ e MCP
+                pg.hotkey("ctrl", "shift", "d")
             else:
                 print("Lojas erradas, a digitação sera encerrada!")
                 sys.exit()
@@ -264,7 +268,7 @@ def preencher_dados_excel(relatorio):
         
         if comprador == "JAIDSON":
             caminho_completo = os.path.join(DIR_JAIDSON, f"{nome_img}.png")
-        elif comprador == "GUSTAVO":
+        elif comprador == "VAGO":
             caminho_completo = os.path.join(DIR_GUSTAVO, f"{nome_img}.png")
 
         salvar_imgs(caminho_completo)

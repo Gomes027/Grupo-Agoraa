@@ -4,7 +4,7 @@ import pandas as pd
 
 def verificar_e_atualizar_csv_tresmann():
     # Caminhos dos arquivos
-    caminho_csv = r"F:\COMPRAS\Automações.Compras\Automações\Superus\Src\Validades\tables\relatorio_tresmann_filtrado.csv"
+    caminho_csv = r"F:\COMPRAS\Automações.Compras\Automações\Superus\Code\Validades\tables\relatorio_tresmann_filtrado.csv"
     caminho_excel = r"F:\COMPRAS\relatorio_tresmann.xlsx"
 
     # Verifica se o arquivo CSV existe

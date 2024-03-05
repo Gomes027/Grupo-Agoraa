@@ -7,6 +7,7 @@ import shutil
 import locale
 import chardet
 import keyboard
+import subprocess
 import pytesseract
 import pyautogui as pg
 from io import BytesIO
@@ -50,8 +51,6 @@ class UtilitariosDeImagem:
         :return: O valor do pedido como string.
         """
         imagem = UtilitariosDeImagem.capturar_e_processar_imagem(region)
-        # Aqui, você pode precisar ajustar as configurações do Tesseract com base em sua imagem específica.
-        # Por exemplo, '--psm 6' para um único bloco de texto uniforme.
         valor_do_pedido = pytesseract.image_to_string(imagem, config='--psm 6', lang='por').strip().replace('\n', '').replace('\r', '')
         return valor_do_pedido
 
@@ -92,6 +91,27 @@ class GerenciamentoDeArquivos:
                     linhas_validas.append(linha)
         with open(arquivo_completo, mode='w', newline='', encoding=encoding) as file:
             csv.writer(file, delimiter=';').writerows(linhas_validas)
+
+class GerenciamentoSuperus:
+    def iniciar_superus(self):
+        subprocess.Popen([r"C:\SUPERUS VIX\Superus.exe"])
+        self.aguardar_abertura()
+
+    def aguardar_abertura(self):
+        while not pg.locateOnScreen(r"Imgs\superus.png", confidence=0.9):
+            sleep(1)
+        pg.click(572, 574, duration=0.5); sleep(1)
+        pg.write("123456"); sleep(3)
+        pg.press("enter", presses=2, interval=1)
+        while not pg.locateOnScreen(r"Imgs\superus_aberto.png", confidence=0.9):
+            sleep(1)
+
+    @staticmethod
+    def fechar_processo():
+        try:
+            subprocess.run(['taskkill', '/f', '/im', "SUPERUS.EXE"], check=True)
+        except subprocess.CalledProcessError:
+            pass
 
 # Classe principal de automação
 class OperacoesDePedido:
@@ -200,7 +220,6 @@ class OperacoesDePedido:
         
         shutil.move(arquivo_downloads, destino)
 
-# Pode-se considerar a criação de subclasses ou classes auxiliares aqui
 class PreenchimentoPedido:
     def __init__(self, util_imagem, configs):
         self.util_imagem = util_imagem
@@ -223,15 +242,15 @@ class PreenchimentoPedido:
         keyboard.write(fornecedor)
         pg.press('enter')
         pg.hotkey('alt', 'o')
-        sleep(1)
+        sleep(3)
         
         recadastramento = self.util_imagem.criar_caminho_imagem("fornecedor_recadastramento", self.configs.caminho_imagens)
-        if pg.locateOnScreen(recadastramento) is not None:
+        if pg.locateOnScreen(recadastramento, confidence=0.9) is not None:
             pg.press("tab")
             pg.press("enter")
         
-        pg.press('tab')
-        sleep(2)
+        pg.click(669,87, duration=3)
+        sleep(1)
 
         # Preenche o Comprador
         self._preencher_comprador(comprador)
@@ -248,8 +267,12 @@ class PreenchimentoPedido:
     def _preencher_comprador(self, comprador):
         """Preenche o campo do comprador na interface."""
         comprador_valido = comprador.lower()
-        if comprador_valido in ["jaidson", "gustavo"]:
-            pg.write(comprador); sleep(1)
+        if comprador_valido == "vago":
+            pg.press("up", presses=10); sleep(1)
+            pg.press('enter')
+        elif comprador_valido == "jaidson":
+            pg.press("up", presses=10); sleep(1)
+            pg.press("down", presses=2); sleep(1)
             pg.press('enter')
         else:
             print(f"Comprador inválido: {comprador}. A digitação será encerrada.")
@@ -334,28 +357,32 @@ class DigitacaoProdutos:
                     pg.press("enter")
 
                 pg.hotkey("alt", "o")
-                sleep(0.5)
+                sleep(1)
+
+                if self.verificar_erros_produto(codigo, erro_inicial=False):
+                    continue
 
             # Fecha a janela de digitar produtos
             pg.press("esc")
             sleep(3)
 
-    def verificar_erros_produto(self, codigo):
+    def verificar_erros_produto(self, codigo, erro_inicial=True):
         bloqueado_img = self.util_imagem.criar_caminho_imagem("bloqueado", self.configs.caminho_imagens)
         fora_do_mix_img = self.util_imagem.criar_caminho_imagem("fora_do_mix", self.configs.caminho_imagens)
         produto_ja_existe_img = self.util_imagem.criar_caminho_imagem("produto_ja_existe", self.configs.caminho_imagens)
-        
-        if pg.locateOnScreen(bloqueado_img) is not None or pg.locateOnScreen(fora_do_mix_img) is not None or pg.locateOnScreen(produto_ja_existe_img) is not None:
-            self.produto_bloqueado_ou_fora_do_mix()
-            print(f"Produto {codigo} com problema (bloqueado, fora do mix, ou já existe).")
-            return True
-
         preco_de_venda_img = self.util_imagem.criar_caminho_imagem("venda", self.configs.caminho_imagens)
         custo_unitario_img = self.util_imagem.criar_caminho_imagem("unitario", self.configs.caminho_imagens)
         
-        if pg.locateOnScreen(preco_de_venda_img) is not None or pg.locateOnScreen(custo_unitario_img) is not None:
-            self.sem_preco_de_venda_ou_custo_unitario(codigo)
-            return True
+        if erro_inicial:
+            if pg.locateOnScreen(bloqueado_img) is not None or pg.locateOnScreen(fora_do_mix_img) is not None or pg.locateOnScreen(produto_ja_existe_img) is not None:
+                self.produto_bloqueado_ou_fora_do_mix()
+                print(f"Produto {codigo} com problema (bloqueado, fora do mix, ou já existe).")
+                return True
+        else:
+            if pg.locateOnScreen(preco_de_venda_img) is not None or pg.locateOnScreen(custo_unitario_img) is not None:
+                print("erro encontrado")
+                self.sem_preco_de_venda_ou_custo_unitario(codigo)
+                return True
 
         return False
 
@@ -439,8 +466,3 @@ class SalvamentoPedido:
             if arquivo_vazio:
                 escritor.writerow(['Numero do Pedido', 'Fornecedor', 'Loja', 'Valor do Pedido', 'Data'])
             escritor.writerow(dados_lista)
-
-# Abre o Superus
-os.system("cls")
-pg.hotkey('win', '3')
-sleep(1)

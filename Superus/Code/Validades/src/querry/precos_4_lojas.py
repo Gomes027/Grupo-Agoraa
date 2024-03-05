@@ -4,7 +4,7 @@ import pandas as pd
 
 def verificar_e_atualizar_csv_precos():
     # Caminhos dos arquivos
-    caminho_csv = r"F:\COMPRAS\Automações.Compras\Automações\Superus\Src\Validades\tables\precos_4_lojas_filtrado.csv"
+    caminho_csv = r"F:\COMPRAS\Automações.Compras\Automações\Superus\Code\Validades\tables\precos_4_lojas_filtrado.csv"
     caminho_excel = r"F:\BI\Bases\relatorio_precos_4_lojas.xlsx"
 
     # Verifica se o arquivo CSV existe

@@ -1,8 +1,5 @@
 import os
 import sys
-import csv
-import chardet
-import keyboard
 import pyperclip
 import pandas as pd
 from time import sleep

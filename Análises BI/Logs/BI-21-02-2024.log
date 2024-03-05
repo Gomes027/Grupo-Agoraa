@@ -1,0 +1,20 @@
+2024-02-21 16:59:10:INFO:Iniciando atualização dos estoques
+2024-02-21 17:03:39:INFO:Atualização dos estoques concluída
+2024-02-21 17:03:39:INFO:Iniciando extração de descontos
+2024-02-21 17:04:24:INFO:Extração de descontos concluída
+2024-02-21 17:04:24:INFO:Iniciando criação da tabela dinâmica
+2024-02-21 17:04:26:INFO:Criação da tabela dinâmica concluída
+2024-02-21 17:04:26:INFO:Iniciando cálculo dos volumes dos 100
+2024-02-21 17:07:09:INFO:Cálculo dos volumes dos 100 concluído
+2024-02-21 17:07:09:INFO:Iniciando extração de encartes
+2024-02-21 17:09:20:INFO:Extração de encartes concluída
+2024-02-21 17:09:20:INFO:Iniciando geração do relatório de encartes
+2024-02-21 17:09:20:INFO:Geração do relatório de encartes concluída
+2024-02-21 17:09:20:INFO:Iniciando extração de lojas
+2024-02-21 17:22:31:INFO:Extração de lojas concluída
+2024-02-21 17:22:31:INFO:Iniciando geração do relatório de lojas
+2024-02-21 17:22:41:INFO:Relatório de lojas gerado
+2024-02-21 17:22:41:INFO:Iniciando extração de relatórios de vinhos
+2024-02-21 17:29:59:INFO:relatórios de vinhos extraidos
+2024-02-21 17:29:59:INFO:Iniciando geração do relatório de vinhos
+2024-02-21 17:29:59:ERROR:Erro no processo: single positional indexer is out-of-bounds

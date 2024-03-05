@@ -1,0 +1,26 @@
+2024-02-16 18:57:54:INFO:Iniciando atualização dos estoques
+2024-02-16 18:59:45:INFO:Atualização dos estoques concluída
+2024-02-16 18:59:45:INFO:Iniciando extração de descontos
+2024-02-16 19:00:19:INFO:Extração de descontos concluída
+2024-02-16 19:00:19:INFO:Iniciando criação da tabela dinâmica
+2024-02-16 19:00:19:INFO:Criação da tabela dinâmica concluída
+2024-02-16 19:00:19:INFO:Iniciando cálculo dos volumes dos 100
+2024-02-16 19:02:29:INFO:Cálculo dos volumes dos 100 concluído
+2024-02-16 19:02:29:INFO:Iniciando extração de encartes
+2024-02-16 19:03:41:INFO:Extração de encartes concluída
+2024-02-16 19:03:41:INFO:Iniciando geração do relatório de encartes
+2024-02-16 19:03:41:INFO:Geração do relatório de encartes concluída
+2024-02-16 19:03:41:INFO:Iniciando extração de lojas
+2024-02-16 19:13:01:INFO:Extração de lojas concluída
+2024-02-16 19:13:01:INFO:Iniciando geração do relatório de lojas
+2024-02-16 19:13:07:INFO:Relatório de lojas gerado
+2024-02-16 19:13:07:INFO:Iniciando extração de relatórios de vinhos
+2024-02-16 19:20:12:INFO:relatórios de vinhos extraidos
+2024-02-16 19:20:12:INFO:Iniciando geração do relatório de vinhos
+2024-02-16 19:22:24:INFO:relatório de vinhos gerado
+2024-02-16 19:22:24:INFO:Iniciando extração dos relatórios de faturamentos
+2024-02-16 19:23:42:INFO:relatórios de faturamento extraidos
+2024-02-16 19:23:42:INFO:Iniciando geração do relatório de faturamento
+2024-02-16 19:23:42:INFO:relatório de faturamento gerado
+2024-02-16 19:23:42:INFO:Iniciando envio de email
+2024-02-16 19:23:46:INFO:Envio de email concluído
