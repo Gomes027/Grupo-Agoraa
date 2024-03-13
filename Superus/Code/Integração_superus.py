@@ -4,6 +4,7 @@ import chardet
 from time import sleep
 
 # Importações dos módulos externos
+from Validades.src.Calculadora_de_validades import processar_arquivo
 from Compras_e_cotações.Enviar_Pedidos_WhatsApp import AutomacaoWhatsApp
 from Transferências.Transferências_Simplificação import TransferenciasEntreLojas
 from Compras_e_cotações.Digitar_pedidos_v3_0 import OperacoesDePedido, GerenciamentoSuperus
@@ -13,9 +14,10 @@ class GerenciadorDePedidos:
     DIR_PDF_PEDIDOS = r"F:\COMPRAS\Automações.Compras\Fila de Pedidos\Arquivos\Compras\PDFs"
     DIR_PDF_COTACAO = r"F:\COMPRAS\Automações.Compras\Fila de Pedidos\Arquivos\Cotações\PDFs"
 
-    def __init__(self):
+    def __init__(self, automacao_whatsapp=None):
         self.gerenciador_superus = GerenciamentoSuperus()
         self.superus_iniciado = False
+        self.automacao_whatsapp = automacao_whatsapp
 
     def verificar_tipo_arquivo(self, arquivo_completo):
         try:
@@ -41,12 +43,22 @@ class GerenciadorDePedidos:
 
     def pontuacao_tipo_arquivo(self, tipo_pedido):
         return {"transferência": 1, "cotação": 2, "compras": 3}.get(tipo_pedido, 4)
+    
+    def processar_validades(self, validades):
+        for validade in validades:
+            caminho_validade = os.path.join(self.DIR_PEDIDOS, validade)
+            processar_arquivo(caminho_validade)
+            os.remove(caminho_validade)
 
     def processar(self):
         while True:
+            validades = {arq for arq in os.listdir(self.DIR_PEDIDOS) if arq.endswith(".xlsx")}
             arquivos = {arq for arq in os.listdir(self.DIR_PEDIDOS) if arq.endswith(".csv")}
             pdfs_cotacao = {arq for arq in os.listdir(self.DIR_PDF_COTACAO) if arq.lower().endswith(".pdf")}
             pdfs_compras = {arq for arq in os.listdir(self.DIR_PDF_PEDIDOS) if arq.lower().endswith(".pdf")}
+
+            if validades:
+                self.processar_validades(validades)
 
             while arquivos:
                 arquivo = sorted(
@@ -68,21 +80,25 @@ class GerenciadorDePedidos:
 
                 os.remove(arquivo_completo)
                 arquivos = {arq for arq in os.listdir(self.DIR_PEDIDOS) if arq.endswith(".csv")}
+                validades = {arq for arq in os.listdir(self.DIR_PEDIDOS) if arq.endswith(".xlsx")}
+
+                if validades:
+                    self.processar_validades(validades)
 
             if self.superus_iniciado:
                 self.gerenciador_superus.fechar_processo()
                 self.superus_iniciado = False
 
             if pdfs_cotacao:
-                AutomacaoWhatsApp.processar_pdfs(pdfs_cotacao, "cotação")
+                automacao_whatsapp.processar_pdfs(pdfs_cotacao, "cotação")
 
-            if pdfs_compras:
-                AutomacaoWhatsApp.processar_pdfs(pdfs_compras, "compras")
+            elif pdfs_compras:
+                automacao_whatsapp.processar_pdfs(pdfs_compras, "compras")
 
-            sleep(1)
-
+            sleep(3)
 
 if __name__ == "__main__":
     os.system("cls")
-    gerenciador = GerenciadorDePedidos()
+    automacao_whatsapp = AutomacaoWhatsApp()
+    gerenciador = GerenciadorDePedidos(automacao_whatsapp)
     gerenciador.processar()

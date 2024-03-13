@@ -85,7 +85,7 @@ class TransferenciasEntreLojas:
             linhas = arquivo.readlines()
 
         quantidade_linhas = len(linhas)  # Conta a quantidade de linhas no arquivo
-        logging.info("Iniciando processamento de %s, com %d linhas.", self.nome_arquivo, quantidade_linhas)
+        logging.info("Iniciando processamento de %s, com %d produtos.", self.nome_arquivo, quantidade_linhas)
 
         for linha in linhas[:]:
             try:
@@ -114,7 +114,6 @@ class TransferenciasEntreLojas:
             tempo_formatado = "%.2f minutos" % minutos
 
         logging.info("Arquivo processado com sucesso em %s!", tempo_formatado)
-
 
     def executar(self):
         self.login_simplificacao()

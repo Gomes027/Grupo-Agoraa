@@ -48,3 +48,6 @@ def verificar_e_atualizar_csv_tresmann():
     df_filtrado_tresmann.to_csv(caminho_csv, index=False, sep=";")
 
     return df_filtrado_tresmann
+
+if __name__ == "__main__":
+    verificar_e_atualizar_csv_tresmann()

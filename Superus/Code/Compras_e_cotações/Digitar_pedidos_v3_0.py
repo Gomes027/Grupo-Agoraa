@@ -6,6 +6,8 @@ import ctypes
 import shutil
 import locale
 import chardet
+import logging
+import datetime
 import keyboard
 import subprocess
 import pytesseract
@@ -21,6 +23,24 @@ class ConfiguracoesIniciais:
         self.caminho_imagens = r"C:\Users\automacao.compras\Pictures\Imgs\Pedidos de Compra"
         pytesseract.pytesseract.tesseract_cmd = self.patch_tesseract
         locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+
+class GerenciadorDeLog:
+    @staticmethod
+    def configurar_logging(nome_arquivo_log):
+        data_hoje = datetime.date.today()
+        nome_arquivo_log_formatado = f"Logs\\Compras\\{nome_arquivo_log}_{data_hoje}.log"
+
+        logging.basicConfig(level=logging.INFO,
+                            format='%(asctime)s - %(levelname)s - %(message)s',
+                            datefmt='%Y-%m-%d %H:%M',
+                            filename=nome_arquivo_log_formatado,
+                            filemode='a')
+
+        console = logging.StreamHandler()
+        console.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        console.setFormatter(formatter)
+        logging.getLogger('').addHandler(console)
 
 class UtilitariosDeImagem:
     @staticmethod
@@ -67,7 +87,7 @@ class UtilitariosDeImagem:
             if localizacao is not None:
                 print("Imagem encontrada.")
                 break
-            sleep(1)  # Pausa breve para evitar uso excessivo de CPU
+            sleep(1)
 
 class GerenciamentoDeArquivos:
     @staticmethod
@@ -78,7 +98,9 @@ class GerenciamentoDeArquivos:
             fornecedor = " ".join(palavras[:-2])
             loja, comprador = palavras[-2], palavras[-1]
             return fornecedor, loja, comprador
-        return None, None, None
+        else:
+            logging.warning(f'Não foi possível extrair fornecedor, loja e comprador do arquivo: {nome_arquivo}')
+            return None, None, None
 
     @staticmethod
     def remover_produtos_sem_quantidade(arquivo_completo):
@@ -127,6 +149,10 @@ class OperacoesDePedido:
 
     def executar_automacao(self, arquivo_completo, tipo_pedido, novo_arquivo):
         # Atualizar dados e preparar o ambiente
+        GerenciadorDeLog.configurar_logging("Log")
+
+        logging.info(f'Processando pedido de {tipo_pedido}: {novo_arquivo}')
+        
         DATA_FORMATADA, DATA_PEDIDO, DATA_CORRECAO = self.atualizar_data()
         fornecedor, loja, comprador = self.ger_arquivos.extrair_fornecedor_loja_comprador(arquivo_completo)
 
@@ -227,7 +253,6 @@ class PreenchimentoPedido:
 
     def preencher_informacoes_pedido(self, fornecedor, loja, comprador, data_da_proxima_visita, arquivo_completo, tipo_pedido):
         """Função responsável por preencher as principais informações do pedido."""
-        # Novo Pedido de compra
         pg.click(234, 707, duration=1)
         sleep(5)
         pg.press('F2')
@@ -373,35 +398,43 @@ class DigitacaoProdutos:
         preco_de_venda_img = self.util_imagem.criar_caminho_imagem("venda", self.configs.caminho_imagens)
         custo_unitario_img = self.util_imagem.criar_caminho_imagem("unitario", self.configs.caminho_imagens)
         
+        erro_encontrado = False
+        
         if erro_inicial:
-            if pg.locateOnScreen(bloqueado_img) is not None or pg.locateOnScreen(fora_do_mix_img) is not None or pg.locateOnScreen(produto_ja_existe_img) is not None:
-                self.produto_bloqueado_ou_fora_do_mix()
-                print(f"Produto {codigo} com problema (bloqueado, fora do mix, ou já existe).")
-                return True
+            if pg.locateOnScreen(bloqueado_img) is not None:
+                logging.warning(f"Produto {codigo} bloqueado para pedido de compra.")
+                erro_encontrado = True
+            elif pg.locateOnScreen(fora_do_mix_img) is not None:
+                logging.warning(f"Produto {codigo} fora do mix.")
+                erro_encontrado = True
+            elif pg.locateOnScreen(produto_ja_existe_img) is not None:
+                logging.warning(f"Produto {codigo} já existe no pedido.")
+                erro_encontrado = True
         else:
-            if pg.locateOnScreen(preco_de_venda_img) is not None or pg.locateOnScreen(custo_unitario_img) is not None:
-                print("erro encontrado")
-                self.sem_preco_de_venda_ou_custo_unitario(codigo)
-                return True
-
-        return False
+            if pg.locateOnScreen(preco_de_venda_img) is not None:
+                logging.warning(f"Produto {codigo} sem preço de venda.")
+                erro_encontrado = True
+            elif pg.locateOnScreen(custo_unitario_img) is not None:
+                logging.warning(f"Produto {codigo} sem custo unitário.")
+                erro_encontrado = True
+        
+        if erro_encontrado:
+            self.produto_bloqueado_ou_fora_do_mix() if erro_inicial else self.sem_preco_de_venda_ou_custo_unitario()
+            return True
+        else:
+            return False
 
     def produto_bloqueado_ou_fora_do_mix(self):
         # Implementação da lógica para lidar com produtos bloqueados ou fora do mix
-        pg.press("enter")
-        sleep(1)
+        pg.press("enter"); sleep(1)
         pg.press("tab", presses=5)
 
-    def sem_preco_de_venda_ou_custo_unitario(self, codigo):
+    def sem_preco_de_venda_ou_custo_unitario(self):
         # Implementação da lógica para lidar com produtos sem preço de venda ou custo unitário
-        print(f"Produto {codigo} sem preço de venda ou custo unitário.")
-        pg.press("enter")
-        sleep(2)
-        pg.doubleClick(344, 573, duration=0.5)
-        sleep(1)
+        pg.press("enter"); sleep(2)
+        pg.doubleClick(344, 573, duration=0.5); sleep(1)
         pg.typewrite("99")
-        pg.press("enter")
-        sleep(1)
+        pg.press("enter"); sleep(1)
         pg.hotkey("alt", "o")
 
 class SalvamentoPedido:
@@ -425,7 +458,8 @@ class SalvamentoPedido:
             pg.press('capslock')
         
         dados = f"{fornecedor} {loja} {num_do_pedido} {data_pedido}"
-        print(dados)
+        
+        logging.info(f"{dados}.pdf salvo com sucesso!")
         
         arquivo_com_extensao = f"{dados}.pdf"
         arquivo_downloads = os.path.join(os.environ.get("USERPROFILE"), "Downloads", arquivo_com_extensao)
@@ -442,11 +476,7 @@ class SalvamentoPedido:
         pg.press("esc")
         sleep(1)
 
-        pg.press("f9")
-        sleep(2)
-        
-        pg.press("f9")
-        sleep(2)
+        pg.press("f9", presses=2, interval=2)
 
         if tipo_pedido == "compras":
             self.registrar_historico_compras([num_do_pedido, fornecedor, loja, valor_formatado, data_historico])

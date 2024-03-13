@@ -4,7 +4,6 @@ import shutil
 import ctypes
 import zipfile
 import asyncio
-import schedule
 from time import sleep
 import pyautogui as pg
 from pyppeteer import launch

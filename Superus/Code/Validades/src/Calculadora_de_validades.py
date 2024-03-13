@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import pyperclip
 import pandas as pd
@@ -24,7 +25,6 @@ def abrir_janela(nome_da_janela):
             sys.exit()
     except Exception as e:
         print(f"Erro ao ativar a janela: {e}")
-        sys.exit()
 
 def procurar_botao(imagem, clicar):
     """ Localiza um botão na tela e clica nele se especificado. """
@@ -78,7 +78,8 @@ def copiar_para_area_de_transferencia(codigo, nome_produto, dias_a_vencer, vcto_
 def buscar_info_produto(df, codigo, loja, coluna):
     result = df.loc[(df['CODIGO'] == codigo) & (df['LOJA'] == loja), coluna]
 
-    return None if result.empty else result.iloc[0]
+    return result.iloc[0] if not result.empty else 0
+
 
 # Funções específicas baseadas na função genérica acima
 def buscar_nome_produto(codigo, loja, df):
@@ -101,21 +102,26 @@ def processar_arquivo(caminho_arquivo):
     df_final_tresmann = verificar_e_atualizar_csv_tresmann()
     df_final_precos = verificar_e_atualizar_csv_precos()
 
-    lista_de_tabelas = []
-
     lojas_dict = {
     "smj": "TRESMANN - SMJ",
     "stt": "TRESMANN - STT",
     "vix": "TRESMANN - VIX"
     }
 
-    # Obtendo o nome do arquivo do caminho completo
-    nome_arquivo = os.path.basename(caminho_arquivo)
-    # Extraindo a primeira palavra do nome do arquivo e convertendo para minúsculas
-    loja_chave = nome_arquivo.split(' ')[0].lower()
+    nome_arquivo, _ = os.path.splitext(os.path.basename(caminho_arquivo))
+    nome_arquivo_limpo = re.sub(r'[^a-zA-Z0-9 ]', '', nome_arquivo)
+    nome_arquivo_limpo = nome_arquivo_limpo.lower()
+    palavras_nome_arquivo = nome_arquivo_limpo.split()
 
-    # Encontrando o nome completo da loja no dicionário
-    loja = lojas_dict.get(loja_chave, "Nome da Loja Não Encontrado")
+    loja = "Nome da Loja Não Encontrado"
+
+    for palavra in palavras_nome_arquivo:
+        if palavra in lojas_dict:
+            loja = lojas_dict[palavra]
+            break
+
+    if loja == "Nome da Loja Não Encontrado":
+        return
 
     abrir_janela("WhatsApp")
     if loja == "TRESMANN - VIX":
