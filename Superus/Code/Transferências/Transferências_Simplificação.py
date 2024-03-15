@@ -1,28 +1,9 @@
 import os
 import time
 import logging
-import datetime
 import subprocess
 from time import sleep
 import pyautogui as pg
-
-class GerenciadorDeLog:
-    @staticmethod
-    def configurar_logging(nome_arquivo_log):
-        data_hoje = datetime.date.today()
-        nome_arquivo_log_formatado = f"Logs\\Transfêrencias\\{nome_arquivo_log}_{data_hoje}.log"
-
-        logging.basicConfig(level=logging.INFO,
-                            format='%(asctime)s - %(levelname)s - %(message)s',
-                            datefmt='%Y-%m-%d %H:%M',
-                            filename=nome_arquivo_log_formatado,
-                            filemode='a')
-
-        console = logging.StreamHandler()
-        console.setLevel(logging.INFO)
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        console.setFormatter(formatter)
-        logging.getLogger('').addHandler(console)
 
 class GerenciamentoDeProcessos:
     @staticmethod
@@ -36,19 +17,31 @@ class AutomacaoGui:
     @staticmethod
     def procurar_botao_e_clicar(imagem, clicar=True):
         while True:
-            localizacao = pg.locateOnScreen(os.path.join("Imgs", imagem))
-            if localizacao:
-                if clicar:
-                    pg.click(pg.center(localizacao), duration=0.5)
-                break
+            try:
+                caminho_imagem = os.path.join("Imgs", imagem)
+                localizacao = pg.locateOnScreen(caminho_imagem, confidence=0.9)
+                
+                if localizacao:
+                    if clicar:
+                        pg.click(pg.center(localizacao), duration=0.1)
+                    break
+            except Exception:
+                continue
+
+    def proxima_iteracao(imagens):
+        while True:
+            try:
+                for imagem in imagens:
+                    localizacao = pg.locateOnScreen(os.path.join("Imgs", imagem))
+                    if localizacao:
+                        return imagem
+            except Exception:
+                continue
 
 class TransferenciasEntreLojas:
     def __init__(self, caminho_arquivo):
         self.caminho_arquivo = caminho_arquivo
         self.nome_arquivo = os.path.splitext(os.path.basename(caminho_arquivo))[0]
-
-        # Configuração inicial do logging
-        GerenciadorDeLog.configurar_logging("Transferencias")
 
     def login_simplificacao(self):
         # Simplificação da lógica original com uso do método auxiliar
@@ -85,19 +78,31 @@ class TransferenciasEntreLojas:
             linhas = arquivo.readlines()
 
         quantidade_linhas = len(linhas)  # Conta a quantidade de linhas no arquivo
-        logging.info("Iniciando processamento de %s, com %d produtos.", self.nome_arquivo, quantidade_linhas)
+        logging.info("Processando %s, com %d produtos.", self.nome_arquivo, quantidade_linhas)
 
         for linha in linhas[:]:
-            try:
-                codigo, quantidade = linha.strip().split(";")
-                pg.typewrite(codigo); pg.press("enter")
-                AutomacaoGui.procurar_botao_e_clicar("qtde_2.png", False)
+            codigo, quantidade = linha.strip().split(";")
+            pg.typewrite(codigo); pg.press("enter")
+            imagem_codigo = AutomacaoGui.proxima_iteracao(["qtde_2.png", "cod_n_encontrado.png"])
+
+            if imagem_codigo == "qtde_2.png":
                 pg.typewrite(quantidade); sleep(1); pg.press("enter")
-                AutomacaoGui.procurar_botao_e_clicar("menu_digitacao.png", False); sleep(1)
+                imagem_quantidade = AutomacaoGui.proxima_iteracao(["menu_digitacao.png", "erro_ao_gravar_item.png"])
+                if imagem_quantidade == "menu_digitacao.png":
+                    pass
+                elif imagem_quantidade == "erro_ao_gravar_item.png":
+                    logging.info("Erro ao gravar codigo %s", codigo)
+                    pg.press("enter"); sleep(3)
+                    pg.press("tab"); sleep(1)
+                    pg.press("enter"); sleep(10)
+                    
                 self.remover_linha(linhas, linha)
                 logging.info("Código %s processado, %s unidades", codigo, quantidade)
-            except Exception as e:
-                print(e)
+
+            elif imagem_codigo == "cod_n_encontrado.png":
+                pg.press("enter"); sleep(1)
+                self.remover_linha(linhas, linha)
+                logging.warning("Código %s não encontrado", codigo)
         
         AutomacaoGui.procurar_botao_e_clicar(r"enviar_arquivo.png")
         AutomacaoGui.procurar_botao_e_clicar(r"confirmar.png", clicar=False); pg.press("enter")
@@ -108,12 +113,12 @@ class TransferenciasEntreLojas:
         
         # Verifica se a duração é menor que 60 segundos
         if duracao_total < 60:
-            tempo_formatado = "%.2f segundos" % duracao_total
+            tempo_formatado = "%d segundos" % duracao_total
         else:
-            minutos = duracao_total / 60
-            tempo_formatado = "%.2f minutos" % minutos
+            minutos = int(duracao_total // 60)  # Usa divisão inteira para descartar os segundos
+            tempo_formatado = "%d minutos" % minutos
 
-        logging.info("Arquivo processado com sucesso em %s!", tempo_formatado)
+        logging.info("Arquivo processado em %s!", tempo_formatado)
 
     def executar(self):
         self.login_simplificacao()

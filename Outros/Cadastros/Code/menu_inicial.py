@@ -1,6 +1,5 @@
 import customtkinter
 from Cadastros.app_cadastro import AppCadastros
-from Ajustes.app_ajustes import AppAjustes
 
 # Configurações iniciais da aparência e tema
 customtkinter.set_appearance_mode("Dark")
@@ -50,12 +49,7 @@ class MenuInicial(customtkinter.CTk):
         self.deiconify()
 
     def abrir_ajustes_mix(self):
-        # Esconde a janela do menu inicial
-        self.withdraw()
-        
-        # Inicia a janela de cadastro de produtos
-        app = AppAjustes(on_close=self.show)
-        app.run()
+        pass
 
     def abrir_cadastro_produtos(self):
         # Esconde a janela do menu inicial

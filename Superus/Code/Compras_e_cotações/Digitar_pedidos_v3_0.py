@@ -24,24 +24,6 @@ class ConfiguracoesIniciais:
         pytesseract.pytesseract.tesseract_cmd = self.patch_tesseract
         locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
-class GerenciadorDeLog:
-    @staticmethod
-    def configurar_logging(nome_arquivo_log):
-        data_hoje = datetime.date.today()
-        nome_arquivo_log_formatado = f"Logs\\Compras\\{nome_arquivo_log}_{data_hoje}.log"
-
-        logging.basicConfig(level=logging.INFO,
-                            format='%(asctime)s - %(levelname)s - %(message)s',
-                            datefmt='%Y-%m-%d %H:%M',
-                            filename=nome_arquivo_log_formatado,
-                            filemode='a')
-
-        console = logging.StreamHandler()
-        console.setLevel(logging.INFO)
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        console.setFormatter(formatter)
-        logging.getLogger('').addHandler(console)
-
 class UtilitariosDeImagem:
     @staticmethod
     def criar_caminho_imagem(nome_imagem, caminho_base):
@@ -148,9 +130,6 @@ class OperacoesDePedido:
         self.salvar_ped = SalvamentoPedido(self.util_imagem, self.configs)
 
     def executar_automacao(self, arquivo_completo, tipo_pedido, novo_arquivo):
-        # Atualizar dados e preparar o ambiente
-        GerenciadorDeLog.configurar_logging("Log")
-
         logging.info(f'Processando pedido de {tipo_pedido}: {novo_arquivo}')
         
         DATA_FORMATADA, DATA_PEDIDO, DATA_CORRECAO = self.atualizar_data()

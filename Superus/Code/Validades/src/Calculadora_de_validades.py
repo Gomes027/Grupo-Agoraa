@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import logging
 import pyperclip
 import pandas as pd
 from time import sleep
@@ -25,17 +26,21 @@ def abrir_janela(nome_da_janela):
             sys.exit()
     except Exception as e:
         print(f"Erro ao ativar a janela: {e}")
+        abrir_janela(nome_da_janela)
 
 def procurar_botao(imagem, clicar):
     """ Localiza um botão na tela e clica nele se especificado. """
     while True:
-        localizacao = pg.locateOnScreen(imagem, confidence=0.9)
-        if localizacao:
-            if clicar:
-                x, y, width, height = localizacao
-                pg.click(x + width // 2, y + height // 2, duration=0.5)
-            break
-        sleep(1)
+        try:
+            localizacao = pg.locateOnScreen(imagem, confidence=0.9)
+            if localizacao:
+                if clicar:
+                    x, y, width, height = localizacao
+                    pg.click(x + width // 2, y + height // 2, duration=0.5)
+                break
+            sleep(1)
+        except Exception:
+            continue
 
 def copiar_para_area_de_transferencia(codigo, nome_produto, dias_a_vencer, vcto_medio, estoque_atual, venda_media_30_dias, projecao_de_venda, perda_financeira_projetada, resultado):
     # Converter todas as variáveis para strings
@@ -118,6 +123,7 @@ def processar_arquivo(caminho_arquivo):
     for palavra in palavras_nome_arquivo:
         if palavra in lojas_dict:
             loja = lojas_dict[palavra]
+            loja_abreviada = palavra.upper()
             break
 
     if loja == "Nome da Loja Não Encontrado":
@@ -183,10 +189,12 @@ def processar_arquivo(caminho_arquivo):
 
         if primeira_iteracao:
             fornecedor = buscar_fornecedor_produto(codigo, loja, df_final_tresmann)
-            pg.write(f"*{fornecedor} {loja}*"); sleep(1)
+            logging.info("Enviando Validade de %s - %s", fornecedor, loja_abreviada)
+            pg.write(f"*{fornecedor} - {loja_abreviada}*"); sleep(1)
             pg.press("enter", presses=2, interval=1)
             primeira_iteracao = False
 
+        logging.info("Produto %s, Situação %s", nome_produto, resultado)
         copiar_para_area_de_transferencia(codigo, nome_produto, dias_a_vencer, int(vcto_medio), int(estoque_atual), int(venda_media_30_dias), int(projecao_de_venda), perda_financeira_projetada, resultado)
 
-    abrir_janela("Superus")
+    abrir_janela("Visual Studio Code")

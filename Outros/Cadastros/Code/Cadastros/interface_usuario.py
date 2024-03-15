@@ -119,8 +119,9 @@ class InterfaceUsuario(customtkinter.CTk):
         label_ean.grid(row=2, column=0, sticky="w", padx=20, pady=(10, 0))
         self.entradas['EAN'] = customtkinter.CTkEntry(coluna_esquerda_frame, font=self.fonte_padrao_1, placeholder_text="Insira o código de barras...")
         self.entradas['EAN'].grid(row=3, column=0, sticky="nsew", padx=20, pady=(0, 10))
+        self.entradas['EAN'].bind("<FocusOut>", self.verificar_ean)
         self.entradas['EAN'].bind("<KeyRelease>", self.format_ean)
-
+        
         # Para DESCRICAO_COMPLETA
         label_descricao_completa = customtkinter.CTkLabel(coluna_esquerda_frame, font=self.fonte_padrao_2, text="Descrição Completa do Produto")
         label_descricao_completa.grid(row=4, column=0, sticky="w", padx=20, pady=(10, 0))
@@ -196,6 +197,13 @@ class InterfaceUsuario(customtkinter.CTk):
         self.entradas['CATEGORIA'] = customtkinter.CTkEntry(coluna_direita_frame, font=self.fonte_padrao_1, placeholder_text="Categoria do produto... (Opcional)")
         self.entradas['CATEGORIA'].grid(row=13, column=0, sticky="nsew", padx=20, pady=(0, 30))
 
+    def verificar_ean(self, event=None):
+        ean = self.entradas['EAN'].get().replace(".", "").replace("-", "")
+
+        ean_existente, codigo, nome = self.banco.verificar_ean_existente(ean)
+        if ean_existente:
+            messagebox.showwarning("Produto Já Cadastrado", f"O produto com EAN {ean} já está cadastrado no sistema.\nProduto: {nome}\n\nCódigo interno: {codigo}")
+
     def format_ean(self, event=None):
         ean = self.entradas['EAN'].get().replace(".", "").replace("-", "")
         novo_ean = ""
@@ -262,13 +270,6 @@ class InterfaceUsuario(customtkinter.CTk):
             messagebox.showerror("Campos Obrigatórios Faltando", f"Por favor, preencha todos os campos obrigatórios:\n\n{', '.join(campos_faltantes)}")
             return
         
-        ean = dados.get('EAN')
-        ean_existente, codigo, nome = self.banco.verificar_ean_existente(ean)
-        
-        if ean_existente:
-            messagebox.showwarning("Produto Já Cadastrado", f"O produto com EAN {ean} já está cadastrado no sistema.\nProduto: {nome}\n\nCódigo interno: {codigo}")
-            return
-        
         # Inicializar campos dos checkboxes com vazio
         for mix in ["SMJ", "STT", "VIX", "MCP"]:
             dados[f"MIX {mix}"] = "SIM" if self.checkboxes_mix[mix].get() else ""
@@ -294,7 +295,6 @@ class InterfaceUsuario(customtkinter.CTk):
         
         if sucesso:
             self.limpar_campos()
-            messagebox.showinfo("Sucesso", "Dados exportados com sucesso!")
         elif sucesso == 0:
             messagebox.showerror("Erro", "Nenhum dado para exportar.")
         else:
