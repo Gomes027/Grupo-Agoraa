@@ -17,7 +17,11 @@ class GerenciadorDeLog:
     def configurar_logging():
         nome_usuario = os.getlogin()
         data_hoje = datetime.date.today()
-        nome_arquivo_log_formatado = f"Logs\Log_{nome_usuario}_{data_hoje}.log"
+        nome_pasta_log = f"Logs\\{nome_usuario}"
+        nome_arquivo_log_formatado = f"{nome_pasta_log}\\{data_hoje}.log"
+
+        if not os.path.exists(nome_pasta_log):
+            os.makedirs(nome_pasta_log)
 
         logging.basicConfig(level=logging.INFO,
                             format='%(asctime)s - %(levelname)s - %(message)s',
@@ -43,7 +47,7 @@ class GerenciadorDePedidos:
         self.superus_iniciado = False
         self.automacao_whatsapp = automacao_whatsapp
 
-    def verificar_tipo_arquivo(arquivo_completo):
+    def verificar_tipo_arquivo(self, arquivo_completo):
         try:
             with open(arquivo_completo, 'rb') as file:
                 encoding = chardet.detect(file.read())['encoding']
@@ -129,7 +133,7 @@ class GerenciadorDePedidos:
             if self.superus_iniciado:
                 self.gerenciador_superus.fechar_processo()
                 self.superus_iniciado = False
-
+            
             if pdfs_cotacao:
                 automacao_whatsapp.processar_pdfs(pdfs_cotacao, "cotação")
 

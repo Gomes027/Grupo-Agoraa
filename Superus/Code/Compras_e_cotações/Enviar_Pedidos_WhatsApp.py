@@ -9,9 +9,6 @@ class AutomacaoWhatsApp:
     DIR_PDF_COTACAO = r"F:\COMPRAS\Automações.Compras\Fila de Pedidos\Arquivos\Cotações\PDFs"
     DIR_PDF_PEDIDOS = r"F:\COMPRAS\Automações.Compras\Fila de Pedidos\Arquivos\Compras\PDFs"
 
-    def __init__(self):
-        self.primeira_iteracao = True
-
     def abrir_janela(self, nome_da_janela):
         try:
             janelas = gw.getWindowsWithTitle(nome_da_janela)
@@ -42,6 +39,7 @@ class AutomacaoWhatsApp:
         arquivos_ordenados = sorted(arquivos)
 
         self.abrir_janela("WhatsApp")
+        self.primeira_iteracao = True
 
         for pdf in arquivos_ordenados:
             nome_sem_extensao = os.path.splitext(pdf)[0]

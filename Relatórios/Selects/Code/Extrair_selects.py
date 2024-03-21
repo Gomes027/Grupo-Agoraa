@@ -15,6 +15,7 @@ def iniciar_superus():
     
     while True:
         if pg.locateOnScreen(r"Imgs\superus.png", confidence=0.9):
+            pg.click(548 ,577, duration=1)
             pg.write("123456"); sleep(3)
             pg.press("enter", presses=2, interval=1)
             break
@@ -23,7 +24,7 @@ def iniciar_superus():
         if pg.locateOnScreen(r"Imgs\superus_aberto.png", confidence=0.9):
             break
 
-def interagir_com_interface_superus(select, data_inicial, data_final, nome_do_arquivo):
+def interagir_com_interface_superus(select, data_inicial, data_final, loja, nome_do_arquivo):
     # Abre a execução de selects
     pg.click(270,31, duration=0.5); sleep(1)
     pg.click(257,46, duration=0.5); sleep(1)
@@ -40,6 +41,15 @@ def interagir_com_interface_superus(select, data_inicial, data_final, nome_do_ar
     pg.typewrite(select); sleep(1)
     pg.press("enter"); sleep(5)
     pg.press("f8"); sleep(3)
+
+    if loja is not None:
+        # Aguarda a aba consultas carregar
+        while True:
+            if pg.locateOnScreen(r"Imgs\loja.png", confidence=0.9) is not None:
+                break
+        
+        pg.write("648677"); sleep(3)
+        pg.press("enter", presses=3, interval=1)
 
     if data_inicial is not None:
         pg.write(data_inicial); sleep(1)
@@ -88,27 +98,27 @@ def aguardar_e_mover_download(arquivo_download, pasta_destino, nome_do_arquivo):
             sleep(5)
 
 # Função para Extração dos dados
-def extrair_dados(tipo_de_select, data_inicio, data_fim, nome_do_arquivo):
+def extrair_dados(tipo_de_select, data_inicio, data_fim, loja, nome_do_arquivo):
     dir_arquivo = os.path.join(r"C:\Users\automacao.compras\Downloads", nome_do_arquivo)
 
     print(f"Extraindo dados para o select {tipo_de_select}...")
-    interagir_com_interface_superus(tipo_de_select, data_inicio, data_fim, nome_do_arquivo)
+    interagir_com_interface_superus(tipo_de_select, data_inicio, data_fim, loja, nome_do_arquivo)
     aguardar_e_mover_download(dir_arquivo, r"F:\BI\Bases", nome_do_arquivo)
 
 # Função Principal, que executa todos os selects
 def executar_selects():
     # Dados para extração
     dados_para_extracao = [
-        ("1350", "01012022", "31122024", "historico_de_recebimento.xlsx"),
-        ("1610", "01012022", "31122024", "historico_inventario.xlsx"),
-        ("1590", None, None, "relatorio_vendas.xlsx"),
-        ("1570", None, None, "relatorio_precos_4_lojas.xlsx"),
-        ("1410", None, None, "relatorio_imgs_cadastradas.xlsx")
+        ("1350", "01012022", "31122024", None, "historico_de_recebimento.xlsx"),
+        ("1610", "01012022", "31122024", None, "historico_inventario.xlsx"),
+        ("1590", None, None, None, "relatorio_vendas.xlsx"),
+        ("1570", None, None, None, "relatorio_precos_4_lojas.xlsx"),
+        ("1410", None, None, "VIX", "produtos_imagem.xlsx")
     ]
 
     # Executar Extração para cada conjunto de dados
-    for select, data_inicio, data_fim, nome_arquivo in dados_para_extracao:
-        extrair_dados(select, data_inicio, data_fim, nome_arquivo)
+    for select, data_inicio, data_fim, loja, nome_arquivo in dados_para_extracao:
+        extrair_dados(select, data_inicio, data_fim, loja, nome_arquivo)
         sleep(5)
     pg.press("f9")
         

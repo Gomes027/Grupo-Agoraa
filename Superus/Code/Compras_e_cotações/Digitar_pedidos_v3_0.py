@@ -1,13 +1,12 @@
 import os
 import csv
 import sys
-import time
 import ctypes
 import shutil
 import locale
 import chardet
 import logging
-import datetime
+import getpass
 import keyboard
 import subprocess
 import pytesseract
@@ -17,25 +16,56 @@ from time import sleep
 from PIL import Image, ImageEnhance
 from datetime import date, timedelta
 
+
 class ConfiguracoesIniciais:
     def __init__(self):
-        self.patch_tesseract = r'C:\Users\automacao.compras\AppData\Local\Programs\Tesseract-OCR\tesseract.exe'
-        self.caminho_imagens = r"C:\Users\automacao.compras\Pictures\Imgs\Pedidos de Compra"
+        """Inicializa as configurações iniciais."""
+        self.usuario_atual = getpass.getuser()
+        self.patch_tesseract = f'C:\\Users\\{self.usuario_atual}\\AppData\\Local\\Programs\\Tesseract-OCR\\tesseract.exe'
         pytesseract.pytesseract.tesseract_cmd = self.patch_tesseract
         locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+
 
 class UtilitariosDeImagem:
     @staticmethod
     def criar_caminho_imagem(nome_imagem, caminho_base):
+        """
+        Cria o caminho completo para um arquivo de imagem.
+
+        Args:
+            nome_imagem (str): Nome do arquivo de imagem.
+            caminho_base (str): Caminho base onde a imagem está localizada.
+
+        Returns:
+            str: Caminho completo para a imagem.
+        """
         return os.path.join(caminho_base, f"{nome_imagem}.png")
 
     @staticmethod
     def capturar_numero_do_pedido(region):
+        """
+        Captura o número do pedido de uma região específica da tela.
+
+        Args:
+            region (tuple): Uma tupla (x, y, largura, altura) que define a região da tela a ser capturada.
+
+        Returns:
+            str: O número do pedido como string.
+        """
         imagem = UtilitariosDeImagem.capturar_e_processar_imagem(region)
         return pytesseract.image_to_string(imagem, config='--psm 6', lang='por').strip().replace('\n', '').replace('\r', '')
 
     @staticmethod
     def capturar_e_processar_imagem(region):
+        """
+        Captura e processa uma região específica da tela.
+
+        Args:
+            region (tuple): Uma tupla (x, y, largura, altura) que define a região da tela a ser capturada.
+
+        Returns:
+            Image: A imagem processada.
+        """
         screenshot = pg.screenshot(region=region)
         imagem_bytesio = BytesIO()
         screenshot.save(imagem_bytesio, format='PNG')
@@ -43,6 +73,27 @@ class UtilitariosDeImagem:
         imagem = imagem.resize((imagem.width * 2, imagem.height * 2), Image.LANCZOS)
         imagem = ImageEnhance.Contrast(imagem).enhance(2)
         return imagem
+    
+    @staticmethod
+    def procurar_botao_e_clicar(imagem, clicar=True):
+        """
+        Procura um botão na tela e realiza um clique se encontrado.
+
+        Args:
+            imagem (str): Nome do arquivo de imagem representando o botão.
+            clicar (bool): Indica se deve ser realizado o clique no botão encontrado.
+        """
+        while True:
+            try:
+                caminho_imagem = os.path.join("Imgs", imagem)
+                localizacao = pg.locateOnScreen(caminho_imagem, confidence=0.9)
+                
+                if localizacao:
+                    if clicar:
+                        pg.click(pg.center(localizacao), duration=0.1)
+                    break
+            except Exception:
+                continue
     
     @staticmethod
     def capturar_valor_do_pedido(region):
@@ -56,24 +107,20 @@ class UtilitariosDeImagem:
         valor_do_pedido = pytesseract.image_to_string(imagem, config='--psm 6', lang='por').strip().replace('\n', '').replace('\r', '')
         return valor_do_pedido
 
-    @staticmethod
-    def sleep_por_imagem(imagem_caminho, confidence=0.9, timeout=30):
-        """Aguarda até que uma imagem específica seja encontrada na tela ou até que o tempo limite seja atingido."""
-        start_time = time.time()
-        while True:
-            current_time = time.time()
-            if current_time - start_time > timeout:
-                print("Timeout: Imagem não encontrada.")
-                break
-            localizacao = pg.locateOnScreen(os.path.join(r"C:\Users\automacao.compras\Pictures\Imgs\Pedidos de Compra", imagem_caminho), confidence=confidence)
-            if localizacao is not None:
-                print("Imagem encontrada.")
-                break
-            sleep(1)
 
 class GerenciamentoDeArquivos:
+    def __init__(self):
+        """Inicializa o gerenciamento de arquivos."""
+        self.usuario_atual = getpass.getuser()
+
     @staticmethod
     def extrair_fornecedor_loja_comprador(arquivo_completo):
+        """
+        Extrai o fornecedor, a loja e o comprador de um arquivo.
+
+        :param arquivo_completo: O caminho completo do arquivo a ser processado.
+        :return: Uma tupla contendo o fornecedor, a loja e o comprador (se encontrados) ou None, None, None se não forem encontrados.
+        """
         nome_arquivo, _ = os.path.splitext(os.path.basename(arquivo_completo))
         palavras = nome_arquivo.split()
         if len(palavras) >= 3:
@@ -86,6 +133,11 @@ class GerenciamentoDeArquivos:
 
     @staticmethod
     def remover_produtos_sem_quantidade(arquivo_completo):
+        """
+        Remove produtos do arquivo que não possuem quantidade especificada.
+
+        :param arquivo_completo: O caminho completo do arquivo a ser processado.
+        """
         with open(arquivo_completo, 'rb') as file:
             encoding = chardet.detect(file.read())['encoding']
         linhas_validas = []
@@ -96,30 +148,55 @@ class GerenciamentoDeArquivos:
         with open(arquivo_completo, mode='w', newline='', encoding=encoding) as file:
             csv.writer(file, delimiter=';').writerows(linhas_validas)
 
+
 class GerenciamentoSuperus:
+    def __init__(self):
+        """Inicializa o gerenciamento do Superus."""
+        self.usuario_atual = getpass.getuser()
+
     def iniciar_superus(self):
+        """Inicia o aplicativo Superus."""
         subprocess.Popen([r"C:\SUPERUS VIX\Superus.exe"])
         self.aguardar_abertura()
 
     def aguardar_abertura(self):
-        while not pg.locateOnScreen(r"Imgs\superus.png", confidence=0.9):
-            sleep(1)
-        pg.click(572, 574, duration=0.5); sleep(1)
-        pg.write("123456"); sleep(3)
+        """Aguarda a abertura do aplicativo Superus e realiza ações específicas dependendo do usuário."""
+        UtilitariosDeImagem.procurar_botao_e_clicar("superus.png", False)
+
+        if self.usuario_atual == "automacao.compras":
+            pg.click(572, 574, duration=0.5); sleep(1)
+            pg.write("123456"); sleep(3)
+        elif self.usuario_atual == "automacao.compras1":
+            pg.click(615, 512, duration=0.5); sleep(1)
+            pg.write("848600"); sleep(3)
+        else:
+            logging.error(f"Usuário {self.usuario_atual} não reconhecido.")
+
         pg.press("enter", presses=2, interval=1)
-        while not pg.locateOnScreen(r"Imgs\superus_aberto.png", confidence=0.9):
-            sleep(1)
+        UtilitariosDeImagem.procurar_botao_e_clicar("superus_aberto.png", False)
 
     @staticmethod
     def fechar_processo():
+        """Fecha o processo do aplicativo Superus."""
         try:
             subprocess.run(['taskkill', '/f', '/im', "SUPERUS.EXE"], check=True)
         except subprocess.CalledProcessError:
             pass
 
-# Classe principal de automação
+
 class OperacoesDePedido:
     def __init__(self):
+        """Inicializa as instâncias necessárias para as operações.
+
+        Args:
+            util_imagem (objeto): Objeto utilizado para manipulação de imagens.
+            configs (objeto): Objeto contendo as configurações iniciais.
+            preenchimento_info (objeto): Objeto para preenchimento de informações de pedido.
+            digitar_ped (objeto): Objeto para digitação de produtos.
+            salvar_ped (objeto): Objeto para salvamento de pedidos.
+            ger_arquivos (objeto): Objeto para gerenciamento de arquivos.
+        """
+        self.usuario_atual = getpass.getuser()
         self.configs = ConfiguracoesIniciais()
         self.util_imagem = UtilitariosDeImagem()
         self.ger_arquivos = GerenciamentoDeArquivos()
@@ -130,6 +207,13 @@ class OperacoesDePedido:
         self.salvar_ped = SalvamentoPedido(self.util_imagem, self.configs)
 
     def executar_automacao(self, arquivo_completo, tipo_pedido, novo_arquivo):
+        """Executa a automação para processar um pedido.
+
+        Args:
+            arquivo_completo (str): Nome completo do arquivo.
+            tipo_pedido (str): Tipo de pedido.
+            novo_arquivo (str): Nome do novo arquivo.
+        """
         logging.info(f'Processando pedido de {tipo_pedido}: {novo_arquivo}')
         
         DATA_FORMATADA, DATA_PEDIDO, DATA_CORRECAO = self.atualizar_data()
@@ -159,37 +243,57 @@ class OperacoesDePedido:
         self.mover_arquivo_pedido(arquivo_downloads, tipo_pedido)
 
     def _inserir_controle_de_pedidos(self):
-        # Aguarda a janela de digitar produtos abrir
-        self.util_imagem.sleep_por_imagem("janela_digitar_produtos.png")
-        
-        # Digita o controle de pedido
-        pg.doubleClick(381, 206, duration=0.5)
-        pg.write("81569")
-        pg.press("enter")
-        sleep(2)
-        
-        if pg.locateOnScreen(self.util_imagem.criar_caminho_imagem("produto_ja_existe", self.configs.caminho_imagens)) is not None:
-            self.digitar_ped.produto_bloqueado_ou_fora_do_mix()
+        """Insere o controle de pedidos na interface do sistema."""
+        if self.usuario_atual == "automacao.compras":
+            pg.doubleClick(381, 206, duration=0.5)
+        elif self.usuario_atual == "automacao.compras1":
+            pg.doubleClick(452, 140, duration=0.5)
         else:
-            pg.doubleClick(734, 389, duration=0.5)
-            pg.write("1")
-            pg.doubleClick(343, 574, duration=0.5)
-            pg.write("0,01")
-            pg.press("enter")
-            pg.hotkey("alt", "o")
-            sleep(2)
+            logging.error(f"Usuário {self.usuario_atual} não reconhecido.")
+        
+        pg.write("81569"); pg.press("enter"); sleep(3)
+        preencher_pedido = False
+        
+        try:
+            if pg.locateOnScreen(self.util_imagem.criar_caminho_imagem("produto_ja_existe", "Imgs"), confidence=0.9) is not None:
+                self.digitar_ped.produto_bloqueado_ou_fora_do_mix()
+        except Exception:
+            preencher_pedido = True
+        
+        if preencher_pedido:
+            if self.usuario_atual == "automacao.compras":
+                pg.doubleClick(734, 389, duration=0.5); pg.write("1")
+                pg.doubleClick(343, 574, duration=0.5); pg.write("0,01")
+            elif self.usuario_atual == "automacao.compras1":
+                pg.doubleClick(821, 326, duration=0.5); pg.write("1")
+                pg.doubleClick(426, 512, duration=0.5); pg.write("0,01")
+            else:
+                logging.error(f"Usuário {self.usuario_atual} não reconhecido.")
+
+            pg.press("enter"); pg.hotkey("alt", "o"); sleep(2)
 
     def atualizar_data(self):
+        """
+        Atualiza as datas necessárias para o processamento do pedido.
+
+        Returns:
+            tuple: Uma tupla contendo a data formatada, o formato do pedido e a data de correção.
+        """
         data_atual = date.today()
-        data_formatada = data_atual.strftime("%d/%m/%Y")  # Data no formato dia/mês/ano
-        data_pedido = data_atual.strftime("%d.%m")  # Data no formato dia.mês para uso em identificações específicas
-        data_correcao = (data_atual + timedelta(days=7)).strftime("%d%m%Y")  # Uma semana a mais para a data de correção
+        data_formatada = data_atual.strftime("%d/%m/%Y")
+        data_pedido = data_atual.strftime("%d.%m")
+        data_correcao = (data_atual + timedelta(days=7)).strftime("%d%m%Y")
         
         return data_formatada, data_pedido, data_correcao
 
     def obter_numero_do_pedido(self):
-        # Exemplo: Definir a região da tela onde o número do pedido é exibido
-        region = (73, 63, 75, 25)  # Exemplo de região; ajuste conforme necessário
+        """
+        Obtém o número do pedido a partir de uma região específica na tela.
+
+        Returns:
+            int: O número do pedido obtido.
+        """
+        region = (73, 63, 75, 25)
         num_do_pedido = self.util_imagem.capturar_numero_do_pedido(region)
         try:
             num_do_pedido = int(num_do_pedido.strip().replace('\n', '').replace('\r', ''))
@@ -200,7 +304,13 @@ class OperacoesDePedido:
         return num_do_pedido
 
     def obter_valor_do_pedido(self):
-        region = (305, 126, 75, 25)  # Exemplo de região; ajuste conforme necessário
+        """
+        Obtém o valor do pedido e formata para exibição.
+
+        Returns:
+            str: O valor do pedido formatado para exibição.
+        """
+        region = (305, 126, 75, 25)
         valor_do_pedido = self.util_imagem.capturar_valor_do_pedido(region)
         try:
             valor_do_pedido = float(valor_do_pedido.strip().replace(',', '.'))
@@ -212,6 +322,12 @@ class OperacoesDePedido:
         return valor_formatado
 
     def mover_arquivo_pedido(self, arquivo_downloads, tipo_pedido):
+        """Move o arquivo de pedido para a pasta correta.
+
+        Args:
+            arquivo_downloads (str): Caminho completo do arquivo a ser movido.
+            tipo_pedido (str): Tipo de pedido, pode ser "compras" ou "cotação".
+        """
         destino_compras = r"F:\COMPRAS\Automações.Compras\Fila de Pedidos\Arquivos\Compras\PDFs"
         destino_cotacoes = r"F:\COMPRAS\Automações.Compras\Fila de Pedidos\Arquivos\Cotações\PDFs"
         
@@ -225,52 +341,71 @@ class OperacoesDePedido:
         
         shutil.move(arquivo_downloads, destino)
 
+
 class PreenchimentoPedido:
     def __init__(self, util_imagem, configs):
+        """Inicializa a classe com as instâncias necessárias.
+
+        Args:
+            util_imagem (objeto): Objeto utilizado para manipulação de imagens.
+            configs (objeto): Objeto contendo as configurações necessárias.
+        """
+        self.usuario_atual = getpass.getuser()
         self.util_imagem = util_imagem
         self.configs = configs
 
     def preencher_informacoes_pedido(self, fornecedor, loja, comprador, data_da_proxima_visita, arquivo_completo, tipo_pedido):
-        """Função responsável por preencher as principais informações do pedido."""
-        pg.click(234, 707, duration=1)
-        sleep(5)
+        """Preenche as principais informações do pedido na interface.
+
+        Args:
+            fornecedor (str): Nome do fornecedor.
+            loja (str): Nome da loja.
+            comprador (str): Nome do comprador.
+            data_da_proxima_visita (str): Data da próxima visita.
+            arquivo_completo (str): Nome do arquivo completo.
+            tipo_pedido (str): Tipo do pedido.
+        """
+        self.util_imagem.procurar_botao_e_clicar(r"compras.png")
+        self.util_imagem.procurar_botao_e_clicar(r"pedidos_de_compra.png"); sleep(6)
         pg.press('F2')
         
-        while True:
-            if pg.locateOnScreen(self.util_imagem.criar_caminho_imagem("pedido_compra", self.configs.caminho_imagens), confidence=0.9) is not None:
-                break
+        self.util_imagem.procurar_botao_e_clicar(r"pedido_compra.png", False)
 
-        # Preenche o Fornecedor
-        pg.click(143, 100, duration=1)
-        sleep(2)
-        keyboard.write(fornecedor)
-        pg.press('enter')
-        pg.hotkey('alt', 'o')
-        sleep(3)
-        
-        recadastramento = self.util_imagem.criar_caminho_imagem("fornecedor_recadastramento", self.configs.caminho_imagens)
-        if pg.locateOnScreen(recadastramento, confidence=0.9) is not None:
-            pg.press("tab")
-            pg.press("enter")
-        
-        pg.click(669,87, duration=3)
-        sleep(1)
+        if self.usuario_atual == "automacao.compras":
+            pg.click(143, 100, duration=1)
+        elif self.usuario_atual == "automacao.compras1":
+            pg.click(135, 99, duration=1)
+        else:
+            logging.error(f"Usuário {self.usuario_atual} não reconhecido.")
 
-        # Preenche o Comprador
+        sleep(2); keyboard.write(fornecedor)
+        pg.press('enter'); pg.hotkey('alt', 'o'); sleep(3)
+        
+        try:
+            if pg.locateOnScreen(r"Imgs\fornecedor_recadastramento.png", confidence=0.9) is not None:
+                pg.press("tab"); pg.press("enter")
+        except Exception:
+            pass
+        
         self._preencher_comprador(comprador)
-
-        # Preenche a Loja
         self._preencher_loja(loja)
-
-        # Frete e prazo de pagamento
         self._configurar_frete_e_prazo()
-
-        # Abre a Janela de Digitar Produtos
         self._abrir_janela_digitar_produtos(data_da_proxima_visita)
 
     def _preencher_comprador(self, comprador):
-        """Preenche o campo do comprador na interface."""
-        comprador_valido = comprador.lower()
+        """Preenche o campo do comprador na interface.
+
+        Args:
+            comprador (str): Nome do comprador.
+        """
+        if self.usuario_atual == "automacao.compras":
+            pg.click(669, 87, duration=3)
+        elif self.usuario_atual == "automacao.compras1":
+            pg.click(670, 91, duration=3)
+        else:
+            logging.error(f"Usuário {self.usuario_atual} não reconhecido.")
+
+        sleep(1); comprador_valido = comprador.lower()
         if comprador_valido == "vago":
             pg.press("up", presses=10); sleep(1)
             pg.press('enter')
@@ -283,11 +418,21 @@ class PreenchimentoPedido:
             sys.exit()
 
     def _preencher_loja(self, loja):
-        """Preenche o campo da loja na interface."""
+        """Preenche o campo da loja na interface.
+
+        Args:
+            loja (str): Nome da loja.
+        """
+        if self.usuario_atual == "automacao.compras":
+            pg.click(665, 67, duration=1)
+        elif self.usuario_atual == "automacao.compras1":
+            pg.click(669, 68, duration=1)
+        else:
+            logging.error(f"Usuário {self.usuario_atual} não reconhecido.")
+
         loja = loja.lower()
         opcoes_loja = {"smj": 6, "stt": 7, "vix": 8, "mcp": 9}
         if loja in opcoes_loja:
-            pg.click(665, 67, duration=1)
             pg.press('up', presses=6)  # Reset position
             pg.press('down', presses=opcoes_loja[loja] - 6)
             pg.press('enter')
@@ -297,44 +442,71 @@ class PreenchimentoPedido:
 
     def _configurar_frete_e_prazo(self):
         """Configura o frete e o prazo de pagamento na interface."""
-        pg.hotkey("alt", "f")
-        pg.click(205, 240, duration=1)
-        pg.hotkey('alt', 'i')
-        pg.click(373, 187, duration=1)
-        pg.typewrite('28')  # Exemplo de valor para o prazo
-        pg.press('enter')
+        pg.hotkey("alt", "f"); pg.click(205, 240, duration=1)
+        pg.hotkey('alt', 'i'); pg.click(373, 187, duration=1)
+        pg.typewrite('28'); pg.press('enter')
 
     def _abrir_janela_digitar_produtos(self, data_da_proxima_visita):
-        """Abre a janela para digitar os produtos e lida com possíveis alertas de data da próxima visita."""
-        # Aguarda a janela de digitar produtos abrir
-        pg.hotkey('alt', 'p')
-        sleep(1)
-        pg.click(35, 933, duration=1)
+        """Abre a janela para digitar os produtos e lida com possíveis alertas de data da próxima visita.
+
+        Args:
+            data_da_proxima_visita (str): Data da próxima visita.
+        """
+        pg.hotkey('alt', 'p'); sleep(1)
+
+        if self.usuario_atual == "automacao.compras":
+            pg.click(35, 933, duration=1)
+        elif self.usuario_atual == "automacao.compras1":
+            pg.click(32, 814, duration=1)
+        else:
+            logging.error(f"Usuário {self.usuario_atual} não reconhecido.")
+
         sleep(2)
 
-        proxima_visita_img = self.util_imagem.criar_caminho_imagem("data_proxima_visita", self.configs.caminho_imagens)
-        if pg.locateOnScreen(proxima_visita_img) is not None:
-            self._corrigir_data_proxima_visita(data_da_proxima_visita)
-        else:
-            self.util_imagem.sleep_por_imagem("janela_digitar_produtos.png")
+        try:
+            if pg.locateOnScreen(r"Imgs\produto_ja_existe.png") is not None:
+                pg.press("enter"); self._corrigir_data_proxima_visita(data_da_proxima_visita)
+        except Exception:
+                self.util_imagem.procurar_botao_e_clicar("janela_digitar_produtos.png", False)
 
     def _corrigir_data_proxima_visita(self, data_da_proxima_visita):
-        """Corrige a data da próxima visita se necessário."""
-        pg.press("enter")
-        pg.typewrite(data_da_proxima_visita)
-        sleep(2)
-        pg.hotkey("alt", "p")
-        sleep(1)
-        pg.click(35, 933, duration=1)
-        sleep(2)
-        self.util_imagem.sleep_por_imagem("janela_digitar_produtos.png")
+        """Corrige a data da próxima visita se necessário.
+
+        Args:
+            data_da_proxima_visita (str): Data da próxima visita.
+        """
+        pg.typewrite(data_da_proxima_visita); sleep(2)
+        pg.hotkey("alt", "p"); sleep(1)
+
+        if self.usuario_atual == "automacao.compras":
+            pg.click(35, 933, duration=1)
+        elif self.usuario_atual == "automacao.compras1":
+            pg.click(32, 814, duration=1)
+        else:
+            logging.error(f"Usuário {self.usuario_atual} não reconhecido.")
+
+        self.util_imagem.procurar_botao_e_clicar("janela_digitar_produtos.png", False)
+
 
 class DigitacaoProdutos:
     def __init__(self, util_imagem, configs):
+        """Inicializa a classe com as instâncias necessárias.
+
+        Args:
+            util_imagem (objeto): Instância da classe UtilImagem.
+            configs (dict): Dicionário contendo as configurações necessárias.
+        """
+        self.usuario_atual = getpass.getuser()
         self.util_imagem = util_imagem
         self.configs = configs
 
     def digitar_produtos(self, tipo_pedido, arquivo_completo):
+        """Digita os produtos conforme o tipo de pedido.
+
+        Args:
+            tipo_pedido (str): Tipo de pedido a ser processado ("cotação" ou "compras").
+            arquivo_completo (str): Caminho completo para o arquivo a ser processado.
+        """
         with open(arquivo_completo) as arquivo:
             linhas_arquivo = arquivo.readlines()
 
@@ -344,9 +516,7 @@ class DigitacaoProdutos:
                 elif tipo_pedido == "compras":
                     codigo, quantidade, embalagem = linha.strip().split(";")
 
-                pg.write(codigo)
-                pg.press("enter")
-                sleep(0.5)
+                pg.write(codigo); pg.press("enter"); sleep(0.5)
 
                 if self.verificar_erros_produto(codigo):
                     continue
@@ -356,46 +526,58 @@ class DigitacaoProdutos:
                 pg.press("enter")
 
                 if tipo_pedido == "cotação":
-                    pg.doubleClick(343, 574, duration=0.5)
-                    pg.write(preco)
-                    pg.press("enter")
+                    if self.usuario_atual == "automacao.compras":
+                        pg.doubleClick(343, 574, duration=0.5)
+                    elif self.usuario_atual == "automacao.compras1":
+                        pg.doubleClick(426, 512, duration=0.5)
+                    else:
+                        logging.error(f"Usuário {self.usuario_atual} não reconhecido.")
+                    
+                    pg.write(preco); pg.press("enter")
 
-                pg.hotkey("alt", "o")
-                sleep(1)
+                pg.hotkey("alt", "o"); sleep(1)
 
                 if self.verificar_erros_produto(codigo, erro_inicial=False):
                     continue
 
-            # Fecha a janela de digitar produtos
             pg.press("esc")
-            sleep(3)
+            sleep(3); pg.press("f11")
 
     def verificar_erros_produto(self, codigo, erro_inicial=True):
-        bloqueado_img = self.util_imagem.criar_caminho_imagem("bloqueado", self.configs.caminho_imagens)
-        fora_do_mix_img = self.util_imagem.criar_caminho_imagem("fora_do_mix", self.configs.caminho_imagens)
-        produto_ja_existe_img = self.util_imagem.criar_caminho_imagem("produto_ja_existe", self.configs.caminho_imagens)
-        preco_de_venda_img = self.util_imagem.criar_caminho_imagem("venda", self.configs.caminho_imagens)
-        custo_unitario_img = self.util_imagem.criar_caminho_imagem("unitario", self.configs.caminho_imagens)
+        """Verifica se há erros relacionados ao produto.
+
+        Args:
+            codigo (str): Código do produto a ser verificado.
+            erro_inicial (bool, optional): Indica se é a primeira verificação de erro. 
+                                           Defaults to True.
+
+        Returns:
+            bool: True se um erro for encontrado, False caso contrário.
+        """
+        bloqueado_img = self.util_imagem.criar_caminho_imagem("bloqueado", "Imgs")
+        fora_do_mix_img = self.util_imagem.criar_caminho_imagem("fora_do_mix", "Imgs")
+        produto_ja_existe_img = self.util_imagem.criar_caminho_imagem("produto_ja_existe", "Imgs")
+        preco_de_venda_img = self.util_imagem.criar_caminho_imagem("venda", "Imgs")
+        custo_unitario_img = self.util_imagem.criar_caminho_imagem("unitario", "Imgs")
         
+        verificacoes = [
+            (bloqueado_img, f"Produto {codigo} bloqueado para pedido de compra."),
+            (fora_do_mix_img, f"Produto {codigo} fora do mix."),
+            (produto_ja_existe_img, f"Produto {codigo} já existe no pedido."),
+            (preco_de_venda_img, f"Produto {codigo} sem preço de venda."),
+            (custo_unitario_img, f"Produto {codigo} sem custo unitário.")
+        ]
+
         erro_encontrado = False
-        
-        if erro_inicial:
-            if pg.locateOnScreen(bloqueado_img) is not None:
-                logging.warning(f"Produto {codigo} bloqueado para pedido de compra.")
-                erro_encontrado = True
-            elif pg.locateOnScreen(fora_do_mix_img) is not None:
-                logging.warning(f"Produto {codigo} fora do mix.")
-                erro_encontrado = True
-            elif pg.locateOnScreen(produto_ja_existe_img) is not None:
-                logging.warning(f"Produto {codigo} já existe no pedido.")
-                erro_encontrado = True
-        else:
-            if pg.locateOnScreen(preco_de_venda_img) is not None:
-                logging.warning(f"Produto {codigo} sem preço de venda.")
-                erro_encontrado = True
-            elif pg.locateOnScreen(custo_unitario_img) is not None:
-                logging.warning(f"Produto {codigo} sem custo unitário.")
-                erro_encontrado = True
+
+        for img, mensagem in verificacoes:
+            if not erro_encontrado:
+                try:
+                    if pg.locateOnScreen(img) is not None:
+                        logging.warning(mensagem)
+                        erro_encontrado = True
+                except Exception:
+                    continue
         
         if erro_encontrado:
             self.produto_bloqueado_ou_fora_do_mix() if erro_inicial else self.sem_preco_de_venda_ou_custo_unitario()
@@ -404,33 +586,63 @@ class DigitacaoProdutos:
             return False
 
     def produto_bloqueado_ou_fora_do_mix(self):
-        # Implementação da lógica para lidar com produtos bloqueados ou fora do mix
+        """Implementação da lógica para lidar com produtos bloqueados ou fora do mix."""
         pg.press("enter"); sleep(1)
         pg.press("tab", presses=5)
 
     def sem_preco_de_venda_ou_custo_unitario(self):
-        # Implementação da lógica para lidar com produtos sem preço de venda ou custo unitário
+        """Implementação da lógica para lidar com produtos sem preço de venda ou custo unitário."""
         pg.press("enter"); sleep(2)
-        pg.doubleClick(344, 573, duration=0.5); sleep(1)
-        pg.typewrite("99")
-        pg.press("enter"); sleep(1)
-        pg.hotkey("alt", "o")
+
+        if self.usuario_atual == "automacao.compras":
+            pg.doubleClick(344, 573, duration=0.5)
+        elif self.usuario_atual == "automacao.compras1":
+            pg.doubleClick(426, 512, duration=0.5)
+        else:
+            logging.error(f"Usuário {self.usuario_atual} não reconhecido.")
+
+        sleep(1); pg.typewrite("99")
+        pg.press("enter"); sleep(1); pg.hotkey("alt", "o")
+
 
 class SalvamentoPedido:
     def __init__(self, util_imagem, configs):
+        """Inicializa a classe com as instâncias necessárias.
+
+        Args:
+            util_imagem (objeto): Instância da classe UtilImagem.
+            configs (dict): Dicionário contendo as configurações necessárias.
+        """ 
+        self.usuario_atual = getpass.getuser()
         self.util_imagem = util_imagem
         self.configs = configs
 
     def salvar_pedido(self, fornecedor, loja, num_do_pedido, data_pedido, tipo_pedido, valor_formatado, data_historico):
-        pg.press("f11")
-        self.util_imagem.sleep_por_imagem(os.path.join(self.configs.caminho_imagens, "salvar_pedido.png"))
-        
-        pg.hotkey("alt", "o")
+        """
+        Salva o pedido e move o arquivo PDF conforme o tipo de pedido.
 
-        self.util_imagem.sleep_por_imagem(os.path.join(self.configs.caminho_imagens, "salvar_pdf.PNG"))
-        sleep(2)
-        
-        pg.click(465, 39, duration=0.5)
+        Args:
+            fornecedor (str): Nome do fornecedor.
+            loja (str): Nome da loja.
+            num_do_pedido (int): Número do pedido.
+            data_pedido (str): Data do pedido no formato dd.mm.
+            tipo_pedido (str): Tipo de pedido ('compras' ou 'cotação').
+            valor_formatado (str): Valor do pedido formatado.
+            data_historico (str): Data para registro no histórico de compras.
+
+        Returns:
+            str: Caminho completo do arquivo de pedido baixado.
+        """
+        self.util_imagem.procurar_botao_e_clicar("salvar_pedido.png", False); pg.hotkey("alt", "o")
+        self.util_imagem.procurar_botao_e_clicar("salvar_pdf.PNG", False); sleep(2)
+
+        if self.usuario_atual == "automacao.compras":
+            pg.click(465, 39, duration=0.5)
+        elif self.usuario_atual == "automacao.compras1":
+            pg.click(463, 43, duration=0.5)
+        else:
+            logging.error(f"Usuário {self.usuario_atual} não reconhecido.")
+
         sleep(2)
 
         if self.desativar_capslock():
@@ -443,35 +655,37 @@ class SalvamentoPedido:
         arquivo_com_extensao = f"{dados}.pdf"
         arquivo_downloads = os.path.join(os.environ.get("USERPROFILE"), "Downloads", arquivo_com_extensao)
         
-        pg.typewrite(dados)
-        sleep(1)
-        
-        pg.press("enter")
-        sleep(1)
-        
-        pg.press("f9")
-        sleep(2)
-
-        pg.press("esc")
-        sleep(1)
-
+        pg.typewrite(dados); sleep(1)
+        pg.press("enter"); sleep(1)
+        pg.press("f9"); sleep(2)
+        pg.press("esc"); sleep(1)
         pg.press("f9", presses=2, interval=2)
 
         if tipo_pedido == "compras":
-            self.registrar_historico_compras([num_do_pedido, fornecedor, loja, valor_formatado, data_historico])
+            self.registrar_historico_compras([data_historico, num_do_pedido, fornecedor, loja, valor_formatado])
         
         return arquivo_downloads
 
     def desativar_capslock(self):
-        """Verifica se o Caps Lock está ativo e retorna True se estiver, False caso contrário."""
+        """
+        Verifica se o Caps Lock está ativo e retorna True se estiver, False caso contrário.
+
+        Returns:
+            bool: True se o Caps Lock estiver ativo, False caso contrário.
+        """
         return ctypes.windll.user32.GetKeyState(0x14) & 1 != 0
 
     def registrar_historico_compras(self, dados_lista):
-        """Registra o pedido no arquivo histórico de compras."""
+        """
+        Registra o pedido no arquivo histórico de compras.
+
+        Args:
+            dados_lista (list): Lista contendo os dados do pedido a serem registrados.
+        """
         caminho_arquivo = os.path.join("Outros", "Historico_compras.csv")
         with open(caminho_arquivo, 'a', newline='', encoding='utf-8') as arquivo:
             escritor = csv.writer(arquivo, delimiter=';')
             arquivo_vazio = arquivo.tell() == 0
             if arquivo_vazio:
-                escritor.writerow(['Numero do Pedido', 'Fornecedor', 'Loja', 'Valor do Pedido', 'Data'])
+                escritor.writerow(['Data', 'Numero do Pedido', 'Fornecedor', 'Loja', 'Valor do Pedido'])
             escritor.writerow(dados_lista)

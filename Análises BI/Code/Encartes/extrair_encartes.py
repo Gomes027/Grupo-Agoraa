@@ -78,14 +78,18 @@ class InterfaceUsuario:
 class GerenciadorDeDatas:
     @staticmethod
     def obter_datas_formatadas():
-        data_atual = datetime.now().date()
+        data_atual = datetime.now()
         dia_ontem = data_atual - timedelta(days=1)
         dia_da_semana_atual = data_atual.weekday()
-        if dia_da_semana_atual >= 4:  # Ajusta para sexta-feira anterior se hoje for sexta, sábado ou domingo
-            ajuste = min(dia_da_semana_atual - 4, 2)
-            ultima_sexta = data_atual - timedelta(days=ajuste + 1)
+        if dia_da_semana_atual == 4:  # Verifica se hoje é sexta-feira
+            ultima_sexta = data_atual - timedelta(days=7)  # Última sexta-feira será 7 dias atrás
         else:
-            ultima_sexta = data_atual - timedelta(days=dia_da_semana_atual + 3)
+            if dia_da_semana_atual < 4:  # Se hoje é sábado, domingo, segunda ou terça
+                ajuste = dia_da_semana_atual + 2  # Ajuste para calcular a última sexta-feira
+                ultima_sexta = data_atual - timedelta(days=ajuste)
+            else:  # Se hoje é quarta ou quinta
+                ajuste = dia_da_semana_atual - 4  # Ajuste para calcular a última sexta-feira
+                ultima_sexta = data_atual - timedelta(days=ajuste)
         return ultima_sexta.strftime('%d%m%Y'), dia_ontem.strftime('%d%m%Y')
 
 class ExtratorDeEncartes:

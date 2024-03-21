@@ -36,7 +36,7 @@ def procurar_botao(imagem, clicar):
             if localizacao:
                 if clicar:
                     x, y, width, height = localizacao
-                    pg.click(x + width // 2, y + height // 2, duration=0.5)
+                    pg.click(x + width // 2, y + height // 2, duration=0.1)
                 break
             sleep(1)
         except Exception:

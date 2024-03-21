@@ -28,11 +28,14 @@ class AutomacaoGui:
             except Exception:
                 continue
 
+    @staticmethod
     def proxima_iteracao(imagens):
         while True:
             try:
                 for imagem in imagens:
-                    localizacao = pg.locateOnScreen(os.path.join("Imgs", imagem))
+                    # Definindo a confiança baseada no nome da imagem
+                    confidence = 0.6 if imagem == 'qtde_2.png' else 0.7
+                    localizacao = pg.locateOnScreen(os.path.join("Imgs", imagem), confidence=confidence)
                     if localizacao:
                         return imagem
             except Exception:
@@ -81,28 +84,32 @@ class TransferenciasEntreLojas:
         logging.info("Processando %s, com %d produtos.", self.nome_arquivo, quantidade_linhas)
 
         for linha in linhas[:]:
-            codigo, quantidade = linha.strip().split(";")
-            pg.typewrite(codigo); pg.press("enter")
-            imagem_codigo = AutomacaoGui.proxima_iteracao(["qtde_2.png", "cod_n_encontrado.png"])
+            if linha.strip():
+                codigo, quantidade = linha.strip().split(";")
+                pg.typewrite(codigo); pg.press("enter")
+                imagem_codigo = AutomacaoGui.proxima_iteracao(["qtde_2.png", "cod_n_encontrado.png", "informe_um_codigo.png"])
 
-            if imagem_codigo == "qtde_2.png":
-                pg.typewrite(quantidade); sleep(1); pg.press("enter")
-                imagem_quantidade = AutomacaoGui.proxima_iteracao(["menu_digitacao.png", "erro_ao_gravar_item.png"])
-                if imagem_quantidade == "menu_digitacao.png":
-                    pass
-                elif imagem_quantidade == "erro_ao_gravar_item.png":
-                    logging.info("Erro ao gravar codigo %s", codigo)
+                if imagem_codigo == "informe_um_codigo.png":
                     pg.press("enter"); sleep(3)
-                    pg.press("tab"); sleep(1)
-                    pg.press("enter"); sleep(10)
-                    
-                self.remover_linha(linhas, linha)
-                logging.info("Código %s processado, %s unidades", codigo, quantidade)
+                    pg.typewrite(codigo); pg.press("enter")
+                    logging.warning("Erro ao digitar codigo %s", codigo)
+                    imagem_codigo = AutomacaoGui.proxima_iteracao(["qtde_2.png", "cod_n_encontrado.png"])
 
-            elif imagem_codigo == "cod_n_encontrado.png":
-                pg.press("enter"); sleep(1)
-                self.remover_linha(linhas, linha)
-                logging.warning("Código %s não encontrado", codigo)
+                if imagem_codigo == "qtde_2.png":
+                    pg.typewrite(quantidade); sleep(1); pg.press("enter")
+                    imagem_quantidade = AutomacaoGui.proxima_iteracao(["menu_digitacao.png", "erro_ao_gravar_item.png"])
+                    if imagem_quantidade == "menu_digitacao.png":
+                        pass
+                    elif imagem_quantidade == "erro_ao_gravar_item.png":
+                        logging.warning("Erro ao gravar codigo %s", codigo)
+                        pg.press("enter"); sleep(3)
+                        pg.press("tab"); sleep(1)
+                        pg.press("enter"); sleep(10)
+                        
+                    self.remover_linha(linhas, linha)
+                    logging.info("Código %s processado, %s unidades", codigo, quantidade)
+
+                sleep(0.5)
         
         AutomacaoGui.procurar_botao_e_clicar(r"enviar_arquivo.png")
         AutomacaoGui.procurar_botao_e_clicar(r"confirmar.png", clicar=False); pg.press("enter")
