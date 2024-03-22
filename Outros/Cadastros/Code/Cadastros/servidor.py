@@ -16,7 +16,7 @@ class DataBaseHandler:
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM dados_table WHERE EAN = ?", (ean,))
+            cursor.execute("DELETE FROM dados_cadastros WHERE EAN = ?", (ean,))
             conn.commit()
         except sqlite3.Error as e:
             print(f"Erro ao excluir produto com EAN {ean}: {e}")
@@ -26,7 +26,7 @@ class DataBaseHandler:
     def tem_dados(self):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        cursor.execute("SELECT EXISTS(SELECT 1 FROM dados_table LIMIT 1)")
+        cursor.execute("SELECT EXISTS(SELECT 1 FROM dados_cadastros LIMIT 1)")
         resultado = cursor.fetchone()[0]
         conn.close()
         return resultado
@@ -35,7 +35,8 @@ class DataBaseHandler:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS dados_table (
+            CREATE TABLE IF NOT EXISTS dados_cadastros (
+                PRIORIDADE INTEGER,
                 EAN TEXT,
                 DESCRICAO_COMPLETA TEXT,
                 DESCRICAO_CONSUMIDOR TEXT,
@@ -48,7 +49,6 @@ class DataBaseHandler:
                 GRUPO TEXT,
                 SUBGRUPO TEXT,
                 CATEGORIA TEXT,
-                PRIORIDADE INTEGER,
                 MIX TEXT,
                 TR TEXT,
                 AP TEXT
@@ -61,7 +61,7 @@ class DataBaseHandler:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO dados_table (EAN, DESCRICAO_COMPLETA, DESCRICAO_CONSUMIDOR, FORNECEDOR, MARCA, GRAMATURA, EMBALAGEM_COMPRA, NCM, SETOR, GRUPO, SUBGRUPO, CATEGORIA, PRIORIDADE, MIX, TR, AP)
+            INSERT INTO dados_cadastros (PRIORIDADE, EAN, DESCRICAO_COMPLETA, DESCRICAO_CONSUMIDOR, FORNECEDOR, MARCA, GRAMATURA, EMBALAGEM_COMPRA, NCM, SETOR, GRUPO, SUBGRUPO, CATEGORIA, MIX, TR, AP)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', data)
         conn.commit()
@@ -70,7 +70,7 @@ class DataBaseHandler:
     def carregar_dados(self):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM dados_table ORDER BY PRIORIDADE DESC')  # Ordenando pela coluna PRIORIDADE em ordem decrescente
+        cursor.execute('SELECT * FROM dados_cadastros ORDER BY PRIORIDADE DESC')  # Ordenando pela coluna PRIORIDADE em ordem decrescente
         rows = cursor.fetchall()
         conn.close()
         return rows
@@ -158,7 +158,7 @@ class Application:
         # Definindo a cor do cabeçalho
         style.configure("Treeview.Heading", background="DarkGray", foreground="black")
 
-        colunas = ("EAN", "DESCRICAO_COMPLETA", "DESCRICAO_CONSUMIDOR", "FORNECEDOR", "MARCA", "GRAMATURA", "EMBALAGEM_COMPRA", "NCM", "SETOR", "GRUPO", "SUBGRUPO", "CATEGORIA", "PRIORIDADE", "MIX", "TR", "AP")
+        colunas = ("PRIORIDADE", "EAN", "DESCRICAO_COMPLETA", "DESCRICAO_CONSUMIDOR", "FORNECEDOR", "MARCA", "GRAMATURA", "EMBALAGEM_COMPRA", "NCM", "SETOR", "GRUPO", "SUBGRUPO", "CATEGORIA", "MIX", "TR", "AP")
         self.tabela = ttk.Treeview(frame, columns=colunas, show="headings")
         for col in colunas:
             self.tabela.heading(col, text=col.replace("_", " "), anchor="center")
@@ -211,7 +211,7 @@ class Application:
             if row_id:
                 item = self.tabela.item(row_id)
                 valores = item['values']
-                ean = valores[0]
+                ean = valores[1]
                 if messagebox.askyesno("Confirmar", "O cadastro já foi feito? Deseja excluir este produto da fila?"):
                     self.tabela.delete(row_id)
                     self.database_handler.excluir_produto(ean)
@@ -235,7 +235,7 @@ class Application:
         self.janela.mainloop()
 
 if __name__ == "__main__":
-    db_handler = DataBaseHandler('DataBase\dados_cad.db')
+    db_handler = DataBaseHandler(r'DataBase\registros_servidor.db')
     db_handler.inicializar()
     update_queue = queue.Queue()  # Definindo a fila de atualização aqui
     app = Application(db_handler, update_queue)

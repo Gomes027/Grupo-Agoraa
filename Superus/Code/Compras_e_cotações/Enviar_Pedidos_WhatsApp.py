@@ -1,14 +1,13 @@
 import os
 import sys
 import keyboard
+from time import sleep
 import pyautogui as pg
 import pygetwindow as gw
-from time import sleep
+from Compras_e_cotações.config import *
+
 
 class AutomacaoWhatsApp:
-    DIR_PDF_COTACAO = r"F:\COMPRAS\Automações.Compras\Fila de Pedidos\Arquivos\Cotações\PDFs"
-    DIR_PDF_PEDIDOS = r"F:\COMPRAS\Automações.Compras\Fila de Pedidos\Arquivos\Compras\PDFs"
-
     def abrir_janela(self, nome_da_janela):
         try:
             janelas = gw.getWindowsWithTitle(nome_da_janela)
@@ -39,7 +38,6 @@ class AutomacaoWhatsApp:
         arquivos_ordenados = sorted(arquivos)
 
         self.abrir_janela("WhatsApp")
-        self.primeira_iteracao = True
 
         for pdf in arquivos_ordenados:
             nome_sem_extensao = os.path.splitext(pdf)[0]
@@ -48,10 +46,10 @@ class AutomacaoWhatsApp:
 
             if tipo_de_pedido == "cotação":
                 self.procurar_botao(r"Imgs\grupo_cotacao.png", clicar=True)
-                caminho_pdf = self.DIR_PDF_COTACAO
+                caminho_pdf = DIR_PDF_COTACAO
             elif tipo_de_pedido == "compras":
                 self.procurar_botao(r"Imgs\grupo_compras.png", clicar=True)
-                caminho_pdf = self.DIR_PDF_PEDIDOS
+                caminho_pdf = DIR_PDF_COMPRAS
 
             self.interagir_com_fornecedor(fornecedor, caminho_pdf, nome_sem_extensao, pdf)
 
@@ -93,26 +91,12 @@ class AutomacaoWhatsApp:
 
         self.procurar_botao(r"Imgs\enviar_pdf.png", clicar=False)
 
-        if self.primeira_iteracao:
-            keyboard.send("ctrl+l"); sleep(1)
-            keyboard.write(caminho_pdf); sleep(1)
-            pg.press("enter"); sleep(1)
-            pg.press("tab", presses=6); sleep(1)
-            self.primeira_iteracao = False
+        keyboard.send("ctrl+l"); sleep(1)
+        keyboard.write(caminho_pdf); sleep(1)
+        pg.press("enter"); sleep(1)
+        pg.press("tab", presses=6); sleep(1)
 
         keyboard.write(nome_sem_extensao); sleep(1)
         pg.press("enter")
 
         self.procurar_botao(r"Imgs\enviar.png", clicar=True); sleep(3)
-
-
-if __name__ == "__main__":
-    automacao = AutomacaoWhatsApp()
-
-    pdfs_cotacao = {arq for arq in os.listdir(AutomacaoWhatsApp.DIR_PDF_COTACAO) if arq.lower().endswith(".pdf")}
-    pdfs_compras = {arq for arq in os.listdir(AutomacaoWhatsApp.DIR_PDF_PEDIDOS) if arq.lower().endswith(".pdf")}
-
-    if pdfs_cotacao:
-        automacao.processar_pdfs(pdfs_cotacao, "cotação")
-    elif pdfs_compras:
-        automacao.processar_pdfs(pdfs_compras, "compras")

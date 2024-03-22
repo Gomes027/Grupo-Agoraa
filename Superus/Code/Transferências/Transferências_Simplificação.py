@@ -90,10 +90,16 @@ class TransferenciasEntreLojas:
                 imagem_codigo = AutomacaoGui.proxima_iteracao(["qtde_2.png", "cod_n_encontrado.png", "informe_um_codigo.png"])
 
                 if imagem_codigo == "informe_um_codigo.png":
-                    pg.press("enter"); sleep(3)
+                    sleep(3); pg.press("enter"); sleep(3)
                     pg.typewrite(codigo); pg.press("enter")
                     logging.warning("Erro ao digitar codigo %s", codigo)
                     imagem_codigo = AutomacaoGui.proxima_iteracao(["qtde_2.png", "cod_n_encontrado.png"])
+                
+                if imagem_codigo == "cod_n_encontrado.png":
+                    pg.press("enter"); sleep(3)
+                    pg.typewrite(codigo); pg.press("enter")
+                    logging.warning("Código %s não encontrado", codigo)
+                    imagem_codigo = AutomacaoGui.proxima_iteracao(["qtde_2.png"])
 
                 if imagem_codigo == "qtde_2.png":
                     pg.typewrite(quantidade); sleep(1); pg.press("enter")

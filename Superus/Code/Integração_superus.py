@@ -1,5 +1,6 @@
 import os
 import csv
+import getpass
 import chardet
 import logging
 import datetime
@@ -7,10 +8,11 @@ from time import sleep
 from filelock import FileLock, Timeout
 
 # Importações dos módulos externos
+from Novo_modelo.Gerar_pedidos_v5 import AutomationManager
 from Validades.src.Calculadora_de_validades import processar_arquivo
 from Compras_e_cotações.Enviar_Pedidos_WhatsApp import AutomacaoWhatsApp
 from Transferências.Transferências_Simplificação import TransferenciasEntreLojas
-from Compras_e_cotações.Digitar_pedidos_v3_0 import OperacoesDePedido, GerenciamentoSuperus
+from Compras_e_cotações.Digitar_pedidos_v4 import OperacoesDePedido, GerenciamentoSuperus
 
 class GerenciadorDeLog:
     @staticmethod
@@ -41,12 +43,12 @@ class GerenciadorDePedidos:
     DIR_PDF_COTACAO = r"F:\COMPRAS\Automações.Compras\Fila de Pedidos\Arquivos\Cotações\PDFs"
 
     def __init__(self, automacao_whatsapp=None):
+        self.superus_iniciado = False
+        self.automacao_whatsapp = automacao_whatsapp
         self.gerenciador_de_logging = GerenciadorDeLog()
         self.gerenciador_de_logging.configurar_logging()
         self.gerenciador_superus = GerenciamentoSuperus()
-        self.superus_iniciado = False
-        self.automacao_whatsapp = automacao_whatsapp
-
+        
     def verificar_tipo_arquivo(self, arquivo_completo):
         try:
             with open(arquivo_completo, 'rb') as file:
@@ -59,10 +61,9 @@ class GerenciadorDePedidos:
                     return "arquivo vazio"
 
                 primeira_linha = linhas[0]
-                if len(linhas) == 3 and not any(char.isdigit() for char in primeira_linha[0]):
+                if not any(char.isdigit() for char in primeira_linha):
                     return "relatorio_pedidos"
-
-                if len(primeira_linha) == 2:
+                elif len(primeira_linha) == 2:
                     return "transferência"
                 elif len(primeira_linha) == 3:
                     return "compras"
@@ -75,14 +76,14 @@ class GerenciadorDePedidos:
             return "erro de leitura"
 
     def pontuacao_tipo_arquivo(self, tipo_pedido):
-        return {"transferência": 1, "cotação": 2, "compras": 3}.get(tipo_pedido, 4)
+        return {"transferência": 1, "cotação": 2, "compras": 3, "relatorio_pedidos": 4}.get(tipo_pedido, 5)
     
     def processar_validades(self, validades):
         for validade in validades:
             caminho_validade = os.path.join(self.DIR_PEDIDOS, validade)
             lock = FileLock(f"{caminho_validade}.lock")
             try:
-                with lock.acquire(timeout=0.1):  # Tenta adquirir o bloqueio, esperando por 0.1 segundo
+                with lock.acquire(timeout=0.1):
                     processar_arquivo(caminho_validade)
                 os.remove(caminho_validade)
             except (Timeout, FileNotFoundError):
@@ -108,7 +109,7 @@ class GerenciadorDePedidos:
                 lock = FileLock(f"{arquivo_completo}.lock")
 
                 try:
-                    with lock.acquire(timeout=0.1):  # Tenta adquirir o bloqueio, esperando por 0.1 segundo
+                    with lock.acquire(timeout=0.1):
                         tipo_pedido = self.verificar_tipo_arquivo(arquivo_completo)
 
                         if tipo_pedido == "transferência":
@@ -119,10 +120,15 @@ class GerenciadorDePedidos:
                                 self.superus_iniciado = True
 
                             OperacoesDePedido().executar_automacao(arquivo_completo, tipo_pedido, arquivo)
+                        elif tipo_pedido == "relatorio_pedidos":
+                            automation_manager = AutomationManager()
+                            automation_manager.iniciar(arquivo_completo)
 
                         os.remove(arquivo_completo)
                 except Timeout:
-                    continue  # Se o arquivo estiver bloqueado, continue para o próximo
+                    continue
+                except FileNotFoundError:
+                    continue    
                 
                 arquivos = {arq for arq in os.listdir(self.DIR_PEDIDOS) if arq.endswith(".csv")}
                 validades = {arq for arq in os.listdir(self.DIR_PEDIDOS) if arq.endswith(".xlsx")}
@@ -134,11 +140,16 @@ class GerenciadorDePedidos:
                 self.gerenciador_superus.fechar_processo()
                 self.superus_iniciado = False
             
-            if pdfs_cotacao:
-                automacao_whatsapp.processar_pdfs(pdfs_cotacao, "cotação")
-
-            elif pdfs_compras:
-                automacao_whatsapp.processar_pdfs(pdfs_compras, "compras")
+            usuario_atual = getpass.getuser()
+            if usuario_atual == "automacao.compras":
+                if pdfs_cotacao:
+                    automacao_whatsapp.processar_pdfs(pdfs_cotacao, "cotação")
+                elif pdfs_compras:
+                    automacao_whatsapp.processar_pdfs(pdfs_compras, "compras")
+            elif usuario_atual == "automacao.compras1":
+                pass
+            else:
+                logging.error(f"Usuário {usuario_atual} não reconhecido.")
 
             sleep(5)
 

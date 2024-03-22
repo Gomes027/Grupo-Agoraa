@@ -1,13 +1,18 @@
+import os
 import json
 import pytz
 import socket
 import sqlite3
+import pandas as pd
+from pathlib import Path
 from datetime import datetime
 from tkinter import messagebox
+from openpyxl.styles import Border, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.styles import PatternFill, Font
 
 class BancoDeDados:
-    def __init__(self, db_path=r'DataBase\registros-cad.db'):
+    def __init__(self, db_path=r'DataBase\registros_cadastro.db'):
         self.db_path = db_path
         self.criar_banco()
 
@@ -33,7 +38,8 @@ class BancoDeDados:
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS cadastro_definitivo (
             ID INTEGER PRIMARY KEY,
-            DATA_HORA TIMESTAMP DEFAULT CURRENT_TIMESTAMP,           
+            DATA_HORA TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIORIDADE TEXT,           
             MOTIVO_CADASTRO TEXT,
             EAN TEXT,
             DESCRICAO_COMPLETA TEXT,
@@ -47,8 +53,7 @@ class BancoDeDados:
             SETOR TEXT,
             GRUPO TEXT,
             SUBGRUPO TEXT,
-            CATEGORIA TEXT,
-            PRIORIDADE TEXT,         
+            CATEGORIA TEXT,        
             "MIX SMJ" TEXT,
             "MIX STT" TEXT,
             "MIX VIX" TEXT,
@@ -64,7 +69,8 @@ class BancoDeDados:
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS cadastro_temporario (
             ID INTEGER PRIMARY KEY,
-            DATA_HORA TIMESTAMP DEFAULT CURRENT_TIMESTAMP,           
+            DATA_HORA TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  
+            PRIORIDADE TEXT,         
             MOTIVO_CADASTRO TEXT,
             EAN TEXT,
             DESCRICAO_COMPLETA TEXT,
@@ -78,8 +84,7 @@ class BancoDeDados:
             SETOR TEXT,
             GRUPO TEXT,
             SUBGRUPO TEXT,
-            CATEGORIA TEXT,
-            PRIORIDADE TEXT,         
+            CATEGORIA TEXT,         
             "MIX SMJ" TEXT,
             "MIX STT" TEXT,
             "MIX VIX" TEXT,
@@ -138,6 +143,7 @@ class BancoDeDados:
         else:
             try:
                 self.mover_dados_para_definitivo()
+                self.exportar_para_excel(nome_arquivo)
                 self.exportar_dados()
                 return True
             except Exception as e:
@@ -150,8 +156,8 @@ class BancoDeDados:
         cursor.execute("SELECT * FROM cadastro_temporario")
         dados_temp = cursor.fetchall()
 
-        colunas_sql = ", ".join(["DATA_HORA", "MOTIVO_CADASTRO", "EAN", "DESCRICAO_COMPLETA", "DESCRICAO_CONSUMIDOR", "FORNECEDOR", "MARCA", 
-                "GRAMATURA", "EMBALAGEM_COMPRA", "NCM", "CODIGO_INTERNO", "SETOR", "GRUPO", "SUBGRUPO", "CATEGORIA", "PRIORIDADE",
+        colunas_sql = ", ".join(["DATA_HORA", "PRIORIDADE", "MOTIVO_CADASTRO", "EAN", "DESCRICAO_COMPLETA", "DESCRICAO_CONSUMIDOR", "FORNECEDOR", "MARCA", 
+                "GRAMATURA", "EMBALAGEM_COMPRA", "NCM", "CODIGO_INTERNO", "SETOR", "GRUPO", "SUBGRUPO", "CATEGORIA",
                 "\"MIX SMJ\"", "\"MIX STT\"", "\"MIX VIX\"", "\"MIX MCP\"", "\"TR SMJ\"", "\"TR STT\"", "\"TR VIX\"", "\"TR MCP\"", "\"AP\""])
         placeholders = ", ".join(["?"] * 25)  # Ajuste no número de placeholders conforme necessário
 
@@ -178,6 +184,59 @@ class BancoDeDados:
             ) + 8
             indice_coluna = dataframe.columns.get_loc(coluna) + 1
             aba.column_dimensions[get_column_letter(indice_coluna)].width = largura_coluna
+
+    def exportar_para_excel(self, nome_arquivo):
+        pasta_downloads = str(Path.home() / "Downloads")
+        nome_arquivo_excel = os.path.join(pasta_downloads, nome_arquivo)
+
+        conexao = sqlite3.connect(self.db_path)
+        try:
+            df = pd.read_sql_query("SELECT * FROM cadastro_temporario", conexao)
+
+            colunas_numericas = ['EAN', 'EMBALAGEM_COMPRA', 'NCM']
+            for coluna in colunas_numericas:
+                df[coluna] = pd.to_numeric(df[coluna], errors='coerce')
+
+            # Exclui a coluna DATA_HORA
+            df = df.drop(columns=['DATA_HORA', 'ID'])
+
+            df.columns = df.columns.str.upper()
+
+            df.to_excel(nome_arquivo_excel, index=False, engine='openpyxl', sheet_name='Dados Cadastro')
+
+            from openpyxl import load_workbook
+            workbook = load_workbook(nome_arquivo_excel)
+            sheet = workbook.active
+
+            thin_border = Border(left=Side(style='thin'), 
+                     right=Side(style='thin'), 
+                     top=Side(style='thin'), 
+                     bottom=Side(style='thin'))
+
+            header_fill = PatternFill(start_color="BDBDBD", end_color="BDBDBD", fill_type="solid")
+            row_fill_1 = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+            row_fill_2 = PatternFill(start_color="F3F3F3", end_color="F3F3F3", fill_type="solid")
+
+            for col in range(1, len(df.columns) + 1):
+                cell = sheet.cell(row=1, column=col)
+                cell.fill = header_fill
+                cell.font = Font(bold=True)
+                cell.border = thin_border
+
+            for row in range(2, sheet.max_row + 1):
+                for col in range(1, len(df.columns) + 1):
+                    cell = sheet.cell(row=row, column=col)
+                    cell.fill = row_fill_1 if row % 2 == 0 else row_fill_2
+                    cell.border = thin_border
+
+            self.ajustar_formato_colunas(workbook, 'Dados Cadastro', df)
+
+            workbook.save(nome_arquivo_excel)
+            print(f"Dados exportados com sucesso para {nome_arquivo_excel}")
+        except Exception as e:
+            print(f"Erro ao exportar dados: {e}")
+        finally:
+            conexao.close()
 
     def send_data_to_server(self, data):
         try:
@@ -207,9 +266,9 @@ class BancoDeDados:
     def exportar_dados(self):
         # Suponho que as colunas selecionadas incluam "MIX" e "TR" para cada loja e "AP" no final.
         colunas_selecionadas = (
-            "EAN", "DESCRICAO_COMPLETA", "DESCRICAO_CONSUMIDOR",
+            "PRIORIDADE", "EAN", "DESCRICAO_COMPLETA", "DESCRICAO_CONSUMIDOR",
             "FORNECEDOR", "MARCA", "GRAMATURA", "EMBALAGEM_COMPRA", "NCM",
-            "SETOR", "GRUPO", "SUBGRUPO", "CATEGORIA", "PRIORIDADE",
+            "SETOR", "GRUPO", "SUBGRUPO", "CATEGORIA",
             "\"MIX SMJ\"", "\"MIX STT\"", "\"MIX VIX\"", "\"MIX MCP\"",
             "\"TR SMJ\"", "\"TR STT\"", "\"TR VIX\"", "\"TR MCP\"", "\"AP\""
         )
