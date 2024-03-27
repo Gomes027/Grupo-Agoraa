@@ -63,8 +63,8 @@ class MenuSelecao:
         ]
 
         for opcao in opcoes:
-            pg.click(362, 131, duration=1)
-            pg.click(96,40, duration=15); sleep(2)
+            pg.click(362, 131, duration=1); sleep(30)
+            pg.click(96,40, duration=1); sleep(5)
 
             pg.write(f"FATURAMENTO {opcao}")
             pg.press("enter")

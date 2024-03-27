@@ -1,0 +1,15 @@
+from Databases.config import *
+from Databases.db_preços_4_lojas import ManipuladorPreços4Lojas
+from Databases.db_relatorio_tresmann import ManipuladorDadosCompras
+from Databases.realizar_calculos_relatorio_tresmann import AtualizadorDadosCompras
+
+manipulador_preços_4_lojas = ManipuladorPreços4Lojas(dir_xlsx_preço_4_lojas, table_name_preço_4_lojas, dir_db_preços_4_lojas)
+manipulador_preços_4_lojas.criar_tabela()
+manipulador_preços_4_lojas.inserir_dados()
+
+manipulador_dados_compras = ManipuladorDadosCompras(dir_xlsx_relatorio_tresmann, table_name_relatorio_tresmann, dir_db_relatorio_tresmann)
+manipulador_dados_compras.criar_tabela()
+manipulador_dados_compras.inserir_atualizar_dados()
+
+atualizador = AtualizadorDadosCompras(dir_db_relatorio_tresmann, dir_db_preços_4_lojas)
+atualizador.atualizar_dados_compras()

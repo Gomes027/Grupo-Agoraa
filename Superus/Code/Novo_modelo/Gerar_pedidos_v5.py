@@ -14,6 +14,7 @@ import pyautogui as pg
 import pygetwindow as gw
 from PIL import ImageGrab
 from Novo_modelo.config import *
+from collections import defaultdict
 from Novo_modelo.Enviar_pedidos import EnviarPedidos
 
 class ClipboardManager:
@@ -118,6 +119,10 @@ class PedidoProcessor:
         def arredondar_para_cima(numero):
             return int(math.ceil(numero))
         
+        # Dicionário para armazenar a soma do NOVO CHECK COMPRA para códigos duplicados
+        soma_codigos = defaultdict(float)
+
+        # Iterar sobre o DataFrame
         for index, row in self.df_resultado.iterrows():
             fornecedor = row['FORNECEDOR']
             loja = row['LOJA']
@@ -126,12 +131,21 @@ class PedidoProcessor:
             nome_loja = self.obter_nome_loja(loja)
             filtro_controle = (self.df_novo_modelo['NOME_FANTASIA'] == fornecedor) & (self.df_novo_modelo['LOJA'].apply(lambda x: any(l in x for l in nome_loja)))
             df_resultado_fornecedor_loja = self.df_novo_modelo.loc[filtro_controle, ['CODIGO', 'NOVO CHECK COMPRA', 'QTDE NA EMBALAGEM']]
-            df_resultado_fornecedor_loja['NOVO CHECK COMPRA'] = df_resultado_fornecedor_loja['NOVO CHECK COMPRA'].apply(arredondar_para_cima)
             df_resultado_fornecedor_loja = df_resultado_fornecedor_loja[df_resultado_fornecedor_loja['NOVO CHECK COMPRA'] != 0]
             nome_arquivo = f'{fornecedor} {primeira_loja} {comprador}.csv'
             caminho_arquivo_novo = os.path.join(DIR_CSV, nome_arquivo)
+            
             if not df_resultado_fornecedor_loja.empty:
+                for _, linha in df_resultado_fornecedor_loja.iterrows():
+                    codigo = linha['CODIGO']
+                    soma_codigos[codigo] += linha['NOVO CHECK COMPRA']
+                
+                df_resultado_fornecedor_loja['NOVO CHECK COMPRA'] = df_resultado_fornecedor_loja['CODIGO'].map(soma_codigos)
+                df_resultado_fornecedor_loja = df_resultado_fornecedor_loja.drop_duplicates(subset='CODIGO', keep='last')
+                df_resultado_fornecedor_loja['NOVO CHECK COMPRA'] = df_resultado_fornecedor_loja['NOVO CHECK COMPRA'].apply(arredondar_para_cima)
                 df_resultado_fornecedor_loja.to_csv(caminho_arquivo_novo, index=False, sep=";", header=None)
+
+        # Salvar o DataFrame final em um arquivo CSV
         self.df_resultado.to_csv(self.novo_arquivo, index=False, sep=";")
 
 class ImageProcessor:

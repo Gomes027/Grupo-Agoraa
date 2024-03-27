@@ -78,7 +78,7 @@ class GerenciadorDePedidos:
             return "erro de leitura"
 
     def pontuacao_tipo_arquivo(self, tipo_pedido):
-        return {"transferência": 1, "cotação": 2, "compras": 3, "relatorio_pedidos": 4}.get(tipo_pedido, 5)
+        return {"relatorio_pedidos": 1, "transferência": 2, "cotação": 3, "compras": 4}.get(tipo_pedido, 5)
     
     def processar_validades(self, validades):
         for validade in validades:
@@ -114,7 +114,10 @@ class GerenciadorDePedidos:
                     with lock.acquire(timeout=0.1):
                         tipo_pedido = self.verificar_tipo_arquivo(arquivo_completo)
 
-                        if tipo_pedido == "transferência":
+                        if tipo_pedido == "relatorio_pedidos":
+                            automation_manager = AutomationManager()
+                            automation_manager.iniciar(arquivo_completo)
+                        elif tipo_pedido == "transferência":
                             TransferenciasEntreLojas(arquivo_completo).executar()
                         elif tipo_pedido in ["cotação", "compras"]:
                             if not self.superus_iniciado:
@@ -122,9 +125,6 @@ class GerenciadorDePedidos:
                                 self.superus_iniciado = True
 
                             OperacoesDePedido().executar_automacao(arquivo_completo, tipo_pedido, arquivo)
-                        elif tipo_pedido == "relatorio_pedidos":
-                            automation_manager = AutomationManager()
-                            automation_manager.iniciar(arquivo_completo)
 
                         os.remove(arquivo_completo)
                 except Timeout:

@@ -578,7 +578,7 @@ class DigitacaoProdutos:
         erro_encontrado = False
 
         if self.usuario_atual == "automacao.compras":
-            valor_confidence = 1
+            valor_confidence = 0.9
         elif self.usuario_atual == "automacao.compras1":
             valor_confidence = 0.9
         else:

@@ -26,7 +26,7 @@ class AutomacaoWhatsApp:
 
     def procurar_botao(self, imagem, clicar):
         while True:
-            localizacao = pg.locateOnScreen(imagem, confidence=0.9)
+            localizacao = pg.locateOnScreen(imagem, confidence=0.8)
             if localizacao:
                 if clicar:
                     x, y, width, height = localizacao
