@@ -84,10 +84,16 @@ class UtilitariosDeImagem:
             imagem (str): Nome do arquivo de imagem representando o botão.
             clicar (bool): Indica se deve ser realizado o clique no botão encontrado.
         """
+
+        if imagem == "janela_digitar_produtos.png":
+            valor_conf = 0.8
+        else:
+            valor_conf = 0.9
+
         while True:
             try:
                 caminho_imagem = os.path.join("Imgs", imagem)
-                localizacao = pg.locateOnScreen(caminho_imagem, confidence=0.9)
+                localizacao = pg.locateOnScreen(caminho_imagem, confidence=valor_conf)
                 
                 if localizacao:
                     if clicar:
@@ -252,12 +258,16 @@ class OperacoesDePedido:
         else:
             logging.error(f"Usuário {self.usuario_atual} não reconhecido.")
         
-        pg.write("81569"); pg.press("enter"); sleep(3)
+        sleep(5)
+        pg.write("81569"); pg.press("enter"); sleep(5)
+        
         preencher_pedido = False
         
         try:
             if pg.locateOnScreen(self.util_imagem.criar_caminho_imagem("produto_ja_existe", "Imgs"), confidence=0.9) is not None:
                 self.digitar_ped.produto_bloqueado_ou_fora_do_mix()
+            else:
+                preencher_pedido = True
         except Exception:
             preencher_pedido = True
         
@@ -271,7 +281,7 @@ class OperacoesDePedido:
             else:
                 logging.error(f"Usuário {self.usuario_atual} não reconhecido.")
 
-            pg.press("enter"); pg.hotkey("alt", "o"); sleep(2)
+            pg.press("enter"); pg.hotkey("alt", "o"); sleep(3)
 
     def atualizar_data(self):
         """
@@ -378,10 +388,10 @@ class PreenchimentoPedido:
             logging.error(f"Usuário {self.usuario_atual} não reconhecido.")
 
         sleep(2); keyboard.write(fornecedor)
-        pg.press('enter'); pg.hotkey('alt', 'o'); sleep(3)
+        pg.press('enter'); pg.hotkey('alt', 'o'); sleep(4)
         
         try:
-            if pg.locateOnScreen(r"Imgs\fornecedor_recadastramento.png", confidence=0.9) is not None:
+            if pg.locateOnScreen(r"Imgs\fornecedor_recadastramento.png", confidence=0.8) is not None:
                 pg.press("tab"); pg.press("enter")
         except Exception:
             pass
@@ -460,10 +470,8 @@ class PreenchimentoPedido:
         else:
             logging.error(f"Usuário {self.usuario_atual} não reconhecido.")
 
-        sleep(2)
-
         try:
-            if pg.locateOnScreen(r"Imgs\produto_ja_existe.png") is not None:
+            if pg.locateOnScreen(r"Imgs\data_proxima_visita.png") is not None:
                 pg.press("enter"); self._corrigir_data_proxima_visita(data_da_proxima_visita)
         except Exception:
                 self.util_imagem.procurar_botao_e_clicar("janela_digitar_produtos.png", False)
@@ -515,7 +523,7 @@ class DigitacaoProdutos:
                 elif tipo_pedido == "compras":
                     codigo, quantidade, embalagem = linha.strip().split(";")
 
-                pg.write(codigo); pg.press("enter"); sleep(0.5)
+                pg.write(codigo); pg.press("enter"); sleep(1)
 
                 if self.verificar_erros_produto(codigo):
                     continue
@@ -534,7 +542,7 @@ class DigitacaoProdutos:
                     
                     pg.write(preco); pg.press("enter")
 
-                pg.hotkey("alt", "o"); sleep(1)
+                pg.hotkey("alt", "o"); sleep(2)
 
                 if self.verificar_erros_produto(codigo, erro_inicial=False):
                     continue
@@ -569,10 +577,17 @@ class DigitacaoProdutos:
 
         erro_encontrado = False
 
+        if self.usuario_atual == "automacao.compras":
+            valor_confidence = 1
+        elif self.usuario_atual == "automacao.compras1":
+            valor_confidence = 0.9
+        else:
+            logging.error(f"Usuário {self.usuario_atual} não reconhecido.")
+
         for img, mensagem in verificacoes:
             if not erro_encontrado:
                 try:
-                    if pg.locateOnScreen(img, confidence=0.9) is not None:
+                    if pg.locateOnScreen(img, confidence=valor_confidence) is not None:
                         logging.warning(mensagem)
                         erro_encontrado = True
                 except Exception:
@@ -586,7 +601,7 @@ class DigitacaoProdutos:
 
     def produto_bloqueado_ou_fora_do_mix(self):
         """Implementação da lógica para lidar com produtos bloqueados ou fora do mix."""
-        pg.press("enter"); sleep(1)
+        pg.press("enter"); sleep(2)
         pg.press("tab", presses=5)
 
     def sem_preco_de_venda_ou_custo_unitario(self):
@@ -601,7 +616,7 @@ class DigitacaoProdutos:
             logging.error(f"Usuário {self.usuario_atual} não reconhecido.")
 
         sleep(1); pg.typewrite("99")
-        pg.press("enter"); sleep(1); pg.hotkey("alt", "o")
+        pg.press("enter"); sleep(1); pg.hotkey("alt", "o"); sleep(1)
 
 
 class SalvamentoPedido:

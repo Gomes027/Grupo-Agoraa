@@ -77,7 +77,7 @@ class AutomacaoWhatsApp:
                 pg.press("esc")
                 break
             elif pg.locateOnScreen(r"Imgs\pedidos_encontrados.png", confidence=0.3) is not None:
-                pg.press("enter")
+                pg.press("enter"); pg.press("esc")
                 sleep(3)
                 # Seleciona o pedido no WhatsApp
                 pg.doubleClick(1063, 521, duration=0.5)

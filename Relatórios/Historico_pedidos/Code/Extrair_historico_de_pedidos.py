@@ -22,7 +22,7 @@ def iniciar_superus():
             break
         
     while True:
-        if pg.locateOnScreen(r"Imgs\superus_aberto.png", confidence=0.9):
+        if pg.locateOnScreen(r"Imgs\superus_aberto.png", confidence=0.8):
             break
 
 def atualizar_data():

@@ -18,6 +18,8 @@ class GerenciadorDeLog:
     @staticmethod
     def configurar_logging():
         nome_usuario = os.getlogin()
+        5
+        
         data_hoje = datetime.date.today()
         nome_pasta_log = f"Logs\\{nome_usuario}"
         nome_arquivo_log_formatado = f"{nome_pasta_log}\\{data_hoje}.log"

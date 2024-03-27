@@ -32,7 +32,7 @@ class EnviarPedidos:
     def procurar_botao(self, caminho_imagem, clicar):
         while True:
             try:
-                localizacao = pg.locateOnScreen(caminho_imagem, confidence=0.9)
+                localizacao = pg.locateOnScreen(caminho_imagem, confidence=0.8)
                 if localizacao:
                     if clicar:
                         x, y, largura, altura = localizacao
@@ -59,7 +59,7 @@ class EnviarPedidos:
         arquivos_de_imagens = os.listdir(IMGS)
         extensoes_imagem = ['.png', '.jpg', '.jpeg']
         imagens = [arquivo for arquivo in arquivos_de_imagens if os.path.splitext(arquivo)[1].lower() in extensoes_imagem]
-        self.procurar_botao(r"Imgs\teste.png", True)
+        self.procurar_botao(r"Imgs\grupo_jaidson.png", True)
         self.procurar_botao(r"Imgs\digite.png", True)
 
         for imagem in imagens:
@@ -67,11 +67,17 @@ class EnviarPedidos:
             caminho_completo = os.path.join(IMGS, imagem)
             print(caminho_completo)
             self.copiar_imagem_para_area_transferencia(caminho_completo)
-            pg.hotkey("ctrl", "v"); sleep(2)
+            pg.hotkey("ctrl", "v"); sleep(3)
             keyboard.write(nome_sem_extensao); sleep(2)
 
-        sleep(5); pg.press("enter")
+        #sleep(5); pg.press("enter")
 
-        for imagem in imagens:
-            caminho_completo = os.path.join(IMGS, imagem)
-            os.remove(caminho_completo)
+        #for imagem in imagens:
+            #caminho_completo = os.path.join(IMGS, imagem)
+            #os.remove(caminho_completo)
+
+# Exemplo de uso
+if __name__ == "__main__":
+    DIR_JAIDSON = r"F:\COMPRAS\Automações.Compras\Fila de Pedidos\Arquivos\Novo Modelo\Imgs\automacao.compras1"
+    automacao = EnviarPedidos(DIR_JAIDSON)
+    automacao.processar_imagens("JAIDSON")

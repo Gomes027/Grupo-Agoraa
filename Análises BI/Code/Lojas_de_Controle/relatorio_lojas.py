@@ -112,12 +112,12 @@ class SalvarExcel:
             # Concatena e remove duplicatas com base em 'Data' e 'Loja', ajuste conforme necessário
             df_atualizado = self.atualizar_df_com_condicao(df_existente, df_novo)
             with pd.ExcelWriter(self.nome_arquivo, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-                book = writer.book
-                writer.sheets = {ws.title: ws for ws in book.worksheets}
                 df_atualizado.to_excel(writer, sheet_name=sheet_name, index=False)
+                writer.book.save(self.nome_arquivo)  # Salvar o livro Excel diretamente
         else:
             with pd.ExcelWriter(self.nome_arquivo, engine='openpyxl', mode='a') as writer:
                 df_novo.to_excel(writer, sheet_name=sheet_name, index=False)
+                writer.book.save(self.nome_arquivo)  # Salvar o livro Excel diretamente
 
     @staticmethod
     def atualizar_df_com_condicao(df_existente, df_novo):

@@ -7,9 +7,10 @@ import pandas as pd
 from pathlib import Path
 from datetime import datetime
 from tkinter import messagebox
+from openpyxl import load_workbook
 from openpyxl.styles import Border, Side
 from openpyxl.utils import get_column_letter
-from openpyxl.styles import PatternFill, Font
+from openpyxl.styles import PatternFill, Font, NamedStyle
 
 class BancoDeDados:
     def __init__(self, db_path=r'DataBase\registros_cadastro.db'):
@@ -204,7 +205,6 @@ class BancoDeDados:
 
             df.to_excel(nome_arquivo_excel, index=False, engine='openpyxl', sheet_name='Dados Cadastro')
 
-            from openpyxl import load_workbook
             workbook = load_workbook(nome_arquivo_excel)
             sheet = workbook.active
 
@@ -304,9 +304,10 @@ class BancoDeDados:
 
             if todos_enviados_com_sucesso:
                 messagebox.showinfo("Sucesso", "Dados exportados com sucesso para o servidor.")
-                self.limpar_tabela_temp()  # Limpa tabela temporária somente se todos os dados foram enviados com sucesso
+                self.limpar_tabela_temp()
             else:
                 messagebox.showerror("Erro", "Servidor não conectado. Tente novamente mais tarde.")
+                self.limpar_tabela_temp()
 
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao exportar dados para o servidor: {e}")

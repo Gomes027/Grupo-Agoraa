@@ -164,7 +164,7 @@ class App(customtkinter.CTk):
                 sys.exit()
 
         def abrir_inventário():
-            abrir_janela("Superus 10.6.2.6"); sleep(1)
+            abrir_janela("Superus"); sleep(1)
             pg.hotkey("ctrl", "home"); sleep(1)
             pg.press("alt"); sleep(1)
             pg.press("e"); sleep(1)
